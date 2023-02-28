@@ -1,0 +1,7 @@
+mujoco
+mujoco-python-viewer
+numpy
+scipy
+matplotlib
+mediapy
+pyyaml
