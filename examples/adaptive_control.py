@@ -42,13 +42,15 @@ while data.time <= T:
     # Calculate the Torque input for the robot
     tau_G = gravity_compensator( model, data, [ "body_link1", "body_link2" ], [ "site_COM1", "site_COM2" ] )
 
-    data.ctrl[ : ] = -tau_G
+    # Calculate the Torque for Adaptive Control
+
+    data.ctrl[ : ] = tau_G 
 
     # If update
     if( n_frames != ( data.time // t_update ) ):
         n_frames += 1
         viewer.render( )
-        print( "[Time] %.6f", data.time )
+        print( "[Time] %6.3f" % data.time )
 
 
 

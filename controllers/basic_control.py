@@ -30,7 +30,7 @@ def gravity_compensator( model, data, body_name, site_name ):
 
     for i in idx:
         mujoco.mj_jacBodyCom( model, data, jacp, jacr, i )
-        tau += model.body_mass[ i ] * jacp.T @ g
+        tau += -model.body_mass[ i ] * jacp.T @ g
     
     # Assert that the site with name "COM" should be non-empty
     return tau 
