@@ -4,12 +4,30 @@ import mujoco
 
 sys.path.append( "../modules" )
 
-# from utils     import quat2rot, quat2angx, rot2quat, get_model_prop, get_length, min_jerk_traj, skew_sym
+def gravity_compensator( model, data, masses, site_name ):
+    """
+        Descriptions
+        ------------
+            A controller for gravity compensation 
 
-def gravity_compensator( model, data, body_name, site_name ):
+        Parameters
+        ----------
+            (1) model: mujoco Model 
+                    The basic mujoco model class for mujoco
 
-    # Assert that the body and site name should match
-    assert( len( body_name ) == len( site_name ) )
+            (2) data: mujoco Data
+                    The basic mujoco data class for mujoco            
+            
+            (3) masses: float array ( 1 x n )
+                    The masses of the 
+            
+            (3) site_names: string array ( 1 x n )
+                    The list of strings 
+
+        Returns
+        ----------                        
+    """
+
 
     # Get the gravity of the model
     g = mujoco.MjOption( ).gravity
@@ -30,7 +48,7 @@ def gravity_compensator( model, data, body_name, site_name ):
 
     for i in idx:
         mujoco.mj_jacBodyCom( model, data, jacp, jacr, i )
-        tau += -model.body_mass[ i ] * jacp.T @ g
+        tau += model.body_mass[ i ] * jacp.T @ g
     
     # Assert that the site with name "COM" should be non-empty
     return tau 
