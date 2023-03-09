@@ -21,16 +21,18 @@ viewer = mujoco_viewer.MujocoViewer( model, data, hide_menus = True )
 np.set_printoptions( precision = 4, threshold = 9, suppress = True )
 
 # Parameters for the simulation
-T        = 4.                       # Total Time
+T        = 4.                       # Total Time for a single simulation
 dt       = model.opt.timestep       # Time-step for the simulation
 fps      = 30                       # Frames per second
 n_frames = 0                        # The number of frames 
 speed    = 1.0                      # The speed of the simulator
 t_update = 1./fps * speed           # Time for update 
 
-
 # The time-step defined in the xml file should smaller than update
 assert( dt <= t_update )
+
+# Set the parameters for the nlopt optimization
+
 
 # Set initial condition of the robot
 q_init = np.array( [ 1.0, 1.0 ] )
