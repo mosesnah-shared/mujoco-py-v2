@@ -30,6 +30,7 @@ def gravity_compensator( model, data, masses, site_names ):
                 Given the site names, tau is a summation of gravity-compensation torques
                 tau = sum_{i=1}^{n} Jp(q)^T * masses[ i ] * g
     """
+    
     # Masses and site_names must be the same length
     assert( len( masses ) == len( site_names ) )
 
@@ -39,17 +40,17 @@ def gravity_compensator( model, data, masses, site_names ):
     # Get the gravity vector of the model
     g = mujoco.MjOption( ).gravity
 
-    # Initialize the Jacobian matrices used for the computation ( 3 x n)
-    jacp = np.zeros( ( 3, model.nq ) )
-    jacr = np.zeros( ( 3, model.nq ) )
+    # Initialize the Jacobian matrices used for the computation ( 3 x nu )
+    jacp = np.zeros( ( 3, model.nv ) )
+    jacr = np.zeros( ( 3, model.nv ) )
 
     # Initialize Torque
-    tau = np.zeros( model.nq )
+    tau = np.zeros( model.nu )
 
     # Summation of Jp(q)^T * mg
     for i, name in enumerate( site_names ):
         mujoco.mj_jacSite( model, data, jacp, jacr, mujoco.mj_name2id( model, mujoco.mjtObj.mjOBJ_SITE, name ) )
-        tau += -masses[ i ] * jacp.T @ g
+        tau += -masses[ i ] * jacp[ :, :model.nu ].T @ g
     
     return tau 
     

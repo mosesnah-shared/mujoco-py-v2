@@ -34,14 +34,14 @@
   	</body>
 
 		<body name='body_link1' pos='0 0 0' euler='0 0 0'>
-      <joint name='joint_1' ref='0' type='hinge' stiffness='0' pos='0 0 0' axis='1 0 0' />
+      <joint name='joint_1' ref='0' type='hinge' stiffness='0' pos='0 0 0' axis='0 -1 0' />
 			<inertial pos='0 0 -0.5' mass='1' diaginertia='1.0 1.0 1.0'/>
       <site pos='0 0 -0.5' name='site_COM1' />
 			<geom name='geom_joint1' type='sphere' pos='0 0 0' material='grey' size='0.1' mass='0'/>
 			<geom type='cylinder' fromto='0 0 0 0 0 -1' material='grey' size='0.05' mass='0'/>
 
 			<body name='body_link2' pos='0 0 -1' euler='0 0 0'>
-        <joint name='joint_2' ref='0' type='hinge' stiffness='0' pos='0 0 0' axis='1 0 0'/>
+        <joint name='joint_2' ref='0' type='hinge' stiffness='0' pos='0 0 0' axis='0 -1 0'/>
 				<inertial pos='0 0 -0.5' mass='1.0' diaginertia='1.0 1.0 1.0'/>
         <site pos='0 0 -0.5' name='site_COM2' />
 				<geom name='geom_joint2'       type='sphere' pos='0 0 0' material='grey'  size='0.1' mass='0'/>

@@ -9,7 +9,7 @@ from basic_control import gravity_compensator
 from utils         import min_jerk_traj
 
 # Call the model + data for MuJoco
-model = mujoco.MjModel.from_xml_path( '../models/double_pendulum.xml' )
+model = mujoco.MjModel.from_xml_path( '../models/whip_N10.xml' )
 data  = mujoco.MjData( model )
 
 # create the viewer object
@@ -26,30 +26,31 @@ n_frames = 0                        # The number of frames
 speed    = 1.0                      # The speed of the simulator
 t_update = 1./fps * speed           # Time for update 
 
+
 # The time-step defined in the xml file should smaller than update
 assert( dt <= t_update )
 
 # Set initial condition of the robot
 q_init = np.array( [ 1.0, 1.0 ] )
 data.qpos[ 0:2 ] = q_init
+data.qpos[ 2 ] = -sum( q_init )
 mujoco.mj_forward( model, data )
 
-# The link masses of the robot
-masses = np.array( [ 1. , 1. ] )
-
 # The impedances of the robot 
-Kq = np.diag( [ 20.0, 20.0 ] )
+Kq = np.array( [ [ 29.5, 14.3 ], [ 14.3, 39.30 ] ] )
 Bq = 0.1 * Kq
 
 # The parameters of the minimum-jerk trajectory.
 t0 = 1.
 D  = 2.
 qi = q_init
-qf = q_init + np.array( [ 0.4, 0.4 ] )
+qf = qi + np.array( [ 0.0, 0.0 ] )
 
 # Save the reference for python
 q  = data.qpos[ 0:2 ]
 dq = data.qvel[ 0:2 ]
+
+masses = np.array( [ 1.595, 0.869, 1.0 ] )
 
 while data.time <= T:
 
@@ -57,14 +58,15 @@ while data.time <= T:
 
     # Calculate the Torque input for the robot
     # Torque 1: Gravity Compensation Torque
-    tau_G = gravity_compensator( model, data, masses, [ "site_COM1", "site_COM2" ] )
+    tau_G = gravity_compensator( model, data, masses, [ "site_upper_arm_COM", "site_fore_arm_COM", "site_whip_COM" ] )
 
     # Torque 2: First-order Joint-space Impedance Controller
     # Calculate the minimum-jerk trajectory 
+	# nu is the number of control inputs
     q0  = np.zeros( model.nu )
     dq0 = np.zeros( model.nu )
 
-    for i in range( model.nq ):
+    for i in range( model.nu ):
         q0[ i ], dq0[ i ], _ = min_jerk_traj( data.time, t0, t0 + D, qi[ i ], qf[ i ], D )
 
     tau_imp = Kq @ ( q0 - q ) + Bq @ ( dq0 - dq )
@@ -77,7 +79,3 @@ while data.time <= T:
         viewer.render( )
         print( "[Time] %6.3f" % data.time )
 
-
-
-# close
-viewer.close()

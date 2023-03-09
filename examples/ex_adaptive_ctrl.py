@@ -1,8 +1,7 @@
 import sys
+import numpy as np
 import mujoco
 import mujoco_viewer
-
-import numpy as np
 
 sys.path.append( "../controllers" )
 from basic_control import gravity_compensator
@@ -11,20 +10,19 @@ from basic_control import gravity_compensator
 model = mujoco.MjModel.from_xml_path( '../models/double_pendulum.xml' )
 data  = mujoco.MjData( model )
 
-# create the viewer object
+# Create the viewer object
 viewer = mujoco_viewer.MujocoViewer( model, data, hide_menus = True )
 
 # Set numpy print options
 np.set_printoptions( precision = 4, threshold = 9, suppress = True )
 
 # Parameters for the simulation
-T        = 4.                   # Total Time
-dt       = model.opt.timestep   # Time-step for the simulation
-fps      = 30                   # Frames per second
-n_frames = 0                    # The number of frames 
-speed    = 1.0                  # The speed of the simulator
-t_update = 1./fps * speed       # Time for update 
-
+T        = 4.                       # Total Time
+dt       = model.opt.timestep       # Time-step for the simulation
+fps      = 30                       # Frames per second
+n_frames = 0                        # The number of frames 
+speed    = 1.0                      # The speed of the simulator
+t_update = 1./fps * speed           # Time for update 
 
 # The time-step defined in the xml file should smaller than update
 assert( dt <= t_update )
