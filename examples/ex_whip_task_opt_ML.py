@@ -1,8 +1,8 @@
 import sys
+import nlopt 
 import numpy as np
 import mujoco
 import mujoco_viewer
-
 
 sys.path += [ "../controllers", "../modules" ]
 
