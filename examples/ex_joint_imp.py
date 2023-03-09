@@ -33,17 +33,38 @@ assert( dt <= t_update )
 data.qpos[ 0:2 ] = [ 1., 1. ]
 mujoco.mj_forward( model, data )
 
+# The masses of robot
+masses = np.array( [ 1. , 1. ] )
+
+# The impedances of the robot 
+Kq = np.diag( [ 20.0, 20.0 ] )
+Bq = 0.1 * Kq
+
+# The parameters of the minimum-jerk trajectory.
+t0 = 1.
+D  = 2.
+q  = mujoco.data.qpos[ 0:2 ]
+dq = mujoco.data.qvel[ 0:2 ]
+
 while data.time <= T:
 
     mujoco.mj_step( model, data )
 
-    # data.ctrl[ : ] = tau_G 
+    # Calculate the Torque input for the robot
+    # Torque 1: Gravity Compensation Torque
+    tau_G = gravity_compensator( model, data, masses, [ "site_COM1", "site_COM2" ] )
+
+    # Torque 2: First-order Joint-space Impedance Controller
+    tau_imp = Kq @ ( q0 - q ) + Bq @ ( dq0 - dq )
+    
+    data.ctrl[ : ] = tau_G + tau_imp
 
     # If update
     if( n_frames != ( data.time // t_update ) ):
         n_frames += 1
         viewer.render( )
         print( "[Time] %6.3f" % data.time )
+
 
 
 # close

@@ -4,7 +4,7 @@ import mujoco
 
 sys.path.append( "../modules" )
 
-def gravity_compensator( model, data, masses, site_name ):
+def gravity_compensator( model, data, masses, site_names ):
     """
         Descriptions
         ------------
@@ -19,37 +19,37 @@ def gravity_compensator( model, data, masses, site_name ):
                     The basic mujoco data class for mujoco            
             
             (3) masses: float array ( 1 x n )
-                    The masses of the 
+                    The masses to be compensated
             
-            (3) site_names: string array ( 1 x n )
-                    The list of strings 
+            (4) site_names: string array ( 1 x n )
+                    The list of strings of site to compute the gravity compensation
 
         Returns
         ----------                        
+            (1) tau: float array (1 x nq)
+                Given the site names, tau is a summation of gravity-compensation torques
+                tau = sum_{i=1}^{n} Jp(q)^T * masses[ i ] * g
     """
+    # Masses and site_names must be the same length
+    assert( len( masses ) == len( site_names ) )
 
+    # The masses should all be positive
+    assert( all( mass > 0 for mass in masses ) )
 
-    # Get the gravity of the model
+    # Get the gravity vector of the model
     g = mujoco.MjOption( ).gravity
 
-    # Calculate the J^T( q )F from the given model
-    # The mass of the robot
-    
-    # The body_name is used to get the mass of the body 
-    idx  = [ mujoco.mj_name2id( model, mujoco.mjtObj.mjOBJ_BODY, name ) for name in body_name ]
-   
-    # Get the Jacobian of the Body's COM
-    # We only need the position 
+    # Initialize the Jacobian matrices used for the computation ( 3 x n)
     jacp = np.zeros( ( 3, model.nq ) )
     jacr = np.zeros( ( 3, model.nq ) )
 
     # Initialize Torque
     tau = np.zeros( model.nq )
 
-    for i in idx:
-        mujoco.mj_jacBodyCom( model, data, jacp, jacr, i )
-        tau += model.body_mass[ i ] * jacp.T @ g
+    # Summation of Jp(q)^T * mg
+    for i, name in enumerate( site_names ):
+        mujoco.mj_jacSite( model, data, jacp, jacr, mujoco.mj_name2id( model, mujoco.mjtObj.mjOBJ_SITE, name ) )
+        tau += -masses[ i ] * jacp.T @ g
     
-    # Assert that the site with name "COM" should be non-empty
     return tau 
     
