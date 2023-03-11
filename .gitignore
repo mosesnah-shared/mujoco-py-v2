@@ -2,3 +2,4 @@
 .venv
 .DS_store
 tmp
+__pycache__

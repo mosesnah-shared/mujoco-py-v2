@@ -1,8 +1,5 @@
-import sys
-import numpy as np
 import mujoco 
-
-sys.path.append( "../modules" )
+import numpy as np
 
 def gravity_compensator( model, data, masses, site_names ):
     """
@@ -23,6 +20,7 @@ def gravity_compensator( model, data, masses, site_names ):
             
             (4) site_names: string array ( 1 x n )
                     The list of strings of site to compute the gravity compensation
+                    We assume that the i-th mass of (3) is attached at the Jacobian of the i-th site
 
         Returns
         ----------                        
@@ -37,14 +35,16 @@ def gravity_compensator( model, data, masses, site_names ):
     # The masses should all be positive
     assert( all( mass > 0 for mass in masses ) )
 
-    # Get the gravity vector of the model
+    # Get the 3D gravity array of the model
     g = mujoco.MjOption( ).gravity
 
-    # Initialize the Jacobian matrices used for the computation ( 3 x nu )
+    # Initialize the Jacobian matrices used for the computation ( 3 x nv )
+    # nv is the # of degrees of freedom of the system
     jacp = np.zeros( ( 3, model.nv ) )
     jacr = np.zeros( ( 3, model.nv ) )
 
     # Initialize Torque
+    # nu is the # of actuators of the system
     tau = np.zeros( model.nu )
 
     # Summation of Jp(q)^T * mg

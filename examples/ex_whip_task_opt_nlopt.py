@@ -2,7 +2,6 @@ import sys
 import nlopt 
 import numpy as np
 import mujoco
-import mujoco_viewer
 
 
 sys.path += [ "../controllers", "../modules" ]
@@ -14,72 +13,99 @@ from utils         import min_jerk_traj
 model = mujoco.MjModel.from_xml_path( '../models/whip_N10.xml' )
 data  = mujoco.MjData( model )
 
-# create the viewer object
-viewer = mujoco_viewer.MujocoViewer( model, data, hide_menus = True )
-
 # Set numpy print options
 np.set_printoptions( precision = 4, threshold = 9, suppress = True )
 
-# Parameters for the simulation
-T        = 4.                       # Total Time for a single simulation
-dt       = model.opt.timestep       # Time-step for the simulation
-fps      = 30                       # Frames per second
-n_frames = 0                        # The number of frames 
-speed    = 1.0                      # The speed of the simulator
-t_update = 1./fps * speed           # Time for update 
+# Parameters for a single simulation
+T  = 4.                                 # Total Time for a single simulation
+dt = model.opt.timestep                 # Time-step for the simulation
+t0 = 0.3                                # Initial Time
 
-# The time-step defined in the xml file should smaller than update
-assert( dt <= t_update )
-
-# Set the parameters for the nlopt optimization
-
-
-# Set initial condition of the robot
-q_init = np.array( [ 1.0, 1.0 ] )
-data.qpos[ 0:2 ] = q_init
-data.qpos[ 2 ] = -sum( q_init )
-mujoco.mj_forward( model, data )
-
-# The impedances of the robot 
-Kq = np.array( [ [ 29.5, 14.3 ], [ 14.3, 39.30 ] ] )
-Bq = 0.1 * Kq
-
-# The parameters of the minimum-jerk trajectory.
-t0 = 1.
-D  = 2.
-qi = q_init
-qf = qi + np.array( [ 0.0, 0.0 ] )
-
-# Save the reference for python
+# Save the references for the q and dq 
 q  = data.qpos[ 0:2 ]
 dq = data.qvel[ 0:2 ]
 
-masses = np.array( [ 1.595, 0.869, 1.0 ] )
+# ======================================================= #
+# ==== Set the parameters for the nlopt optimization ==== #
+# ======================================================= # 
+n_opt       = 5                         # Number of parameters to optimize
+idx_algo    = nlopt.GN_DIRECT_L         # The type of the algorithms
+opt = nlopt.opt( idx_algo, n_opt )      # Call the optimization object
 
-while data.time <= T:
+#                   q0i,SH          q0i,EL          q0f,SH        q0f,EL      D
+lb = np.array( [ -0.5 * np.pi,         0.0,     0.1 *np.pi,         0.0,    0.4 ])
+ub = np.array( [ -0.1 * np.pi, 0.9 * np.pi,     1.0 *np.pi, 0.9 * np.pi,    1.5 ])
+nl_init = ( lb + ub ) * 0.5
 
-    mujoco.mj_step( model, data )
+opt.set_lower_bounds( lb )
+opt.set_upper_bounds( ub )
 
-    # Calculate the Torque input for the robot
-    # Torque 1: Gravity Compensation Torque
-    tau_G = gravity_compensator( model, data, masses, [ "site_upper_arm_COM", "site_fore_arm_COM", "site_whip_COM" ] )
+N  = 600
+opt.set_maxeval( N )
+opt.set_stopval( 1e-5 )
 
-    # Torque 2: First-order Joint-space Impedance Controller
-    # Calculate the minimum-jerk trajectory 
-	# nu is the number of control inputs
-    q0  = np.zeros( model.nu )
-    dq0 = np.zeros( model.nu )
+# ======================================================= #
+# ====== Set the function wrapper for optimization ====== #
+# ======================================================= # 
+def nlopt_objective( pars, grad ):      
 
-    for i in range( model.nu ):
-        q0[ i ], dq0[ i ], _ = min_jerk_traj( data.time, t0, t0 + D, qi[ i ], qf[ i ], D )
+    q0i = pars[ 0:2 ]
+    q0f = pars[ 2:4 ]
+    D   = pars[  -1 ]
 
-    tau_imp = Kq @ ( q0 - q ) + Bq @ ( dq0 - dq )
+    dist_arr = np.zeros( round( T/dt ) + 1 )
+    n_step   = 0 
+
+    # Set initial condition of the robot
+    q_init = q0i
+    data.qpos[ 0:2 ] = q_init
+    data.qpos[ 2 ] = -sum( q_init )
+    mujoco.mj_forward( model, data )
+
+    # The impedances of the robot 
+    Kq = np.array( [ [ 29.5, 14.3 ], [ 14.3, 39.30 ] ] )
+    Bq = 0.1 * Kq
+
+    masses = np.array( [ 1.595, 0.869, 1.0 ] )
+
+    while data.time <= T:
+
+        # Calculate the distance between the tip and target 
+        tmp_dist = np.linalg.norm( data.site_xpos[ mujoco.mj_name2id( model, mujoco.mjtObj.mjOBJ_SITE, "site_whip_tip" ), : ]  \
+                                 - data.site_xpos[ mujoco.mj_name2id( model, mujoco.mjtObj.mjOBJ_SITE, "site_target"   ), : ] )
+        
+        dist_arr[ n_step ] = tmp_dist if tmp_dist >= 0.05 else 0 
+
+        mujoco.mj_step( model, data )
+
+        # Calculate the Torque input for the robot
+        # Torque 1: Gravity Compensation Torque
+        tau_G = gravity_compensator( model, data, masses, [ "site_upper_arm_COM", "site_fore_arm_COM", "site_whip_COM" ] )
+
+        # Torque 2: First-order Joint-space Impedance Controller
+        # Calculate the minimum-jerk trajectory 
+        # We have in particular, 2-DOF for this robot
+        q0  = np.zeros( 2 )
+        dq0 = np.zeros( 2 )
+
+        for i in range( 2 ):
+            q0[ i ], dq0[ i ], _ = min_jerk_traj( data.time, t0, t0 + D, q0i[ i ], q0f[ i ], D )
+
+        tau_imp = Kq @ ( q0 - q ) + Bq @ ( dq0 - dq )
+        
+        data.ctrl[ : ] = tau_G + tau_imp
+
+        n_step += 1
     
-    data.ctrl[ : ] = tau_G + tau_imp
+    # Reset the simulation
+    mujoco.mj_resetData( model, data )
 
-    # If update
-    if( n_frames != ( data.time // t_update ) ):
-        n_frames += 1
-        viewer.render( )
-        print( "[Time] %6.3f" % data.time )
+    # Print the current iteration and 
+    print( "[Iteration {}] [Movement Parameters] {} [Distance] {}".format( opt.get_numevals( ) + 1, np.array2string( pars[ : ] ) , min( dist_arr[ :n_step ] )) )
+
+    return min( dist_arr[ :n_step ] )
+
+opt.set_min_objective( nlopt_objective )
+xopt = opt.optimize( nl_init )
+
 

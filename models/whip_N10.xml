@@ -87,6 +87,7 @@
          </body>
       </body>
       <geom name="geom_target" type="sphere" pos=" 1.5850  0.0000  0.0000" material="LimbColor" mass="0" size="0.03" />
+      <site name="site_target" pos=" 1.5850  0.0000  0.0000" />
    </worldbody>
 
    <actuator>
