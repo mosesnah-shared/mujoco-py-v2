@@ -3,7 +3,6 @@ import nlopt
 import numpy as np
 import mujoco
 
-
 sys.path += [ "../controllers", "../modules" ]
 
 from basic_control import gravity_compensator
@@ -33,8 +32,8 @@ idx_algo    = nlopt.GN_DIRECT_L         # The type of the algorithms
 opt = nlopt.opt( idx_algo, n_opt )      # Call the optimization object
 
 #                   q0i,SH          q0i,EL          q0f,SH        q0f,EL      D
-lb = np.array( [ -0.5 * np.pi,         0.0,     0.1 *np.pi,         0.0,    0.4 ])
-ub = np.array( [ -0.1 * np.pi, 0.9 * np.pi,     1.0 *np.pi, 0.9 * np.pi,    1.5 ])
+lb = np.array( [ -0.5 * np.pi,         0.0,     -0.5 *np.pi,         0.0,    0.4 ])
+ub = np.array( [ -0.1 * np.pi, 0.9 * np.pi,      0.5 *np.pi, 0.9 * np.pi,    1.5 ])
 nl_init = ( lb + ub ) * 0.5
 
 opt.set_lower_bounds( lb )
@@ -74,7 +73,7 @@ def nlopt_objective( pars, grad ):
         tmp_dist = np.linalg.norm( data.site_xpos[ mujoco.mj_name2id( model, mujoco.mjtObj.mjOBJ_SITE, "site_whip_tip" ), : ]  \
                                  - data.site_xpos[ mujoco.mj_name2id( model, mujoco.mjtObj.mjOBJ_SITE, "site_target"   ), : ] )
         
-        dist_arr[ n_step ] = tmp_dist if tmp_dist >= 0.05 else 0 
+        dist_arr[ n_step ] = tmp_dist if tmp_dist >= 0.06 else 0 
 
         mujoco.mj_step( model, data )
 
@@ -101,7 +100,7 @@ def nlopt_objective( pars, grad ):
     mujoco.mj_resetData( model, data )
 
     # Print the current iteration and 
-    print( "[Iteration {}] [Movement Parameters] {} [Distance] {}".format( opt.get_numevals( ) + 1, np.array2string( pars[ : ] ) , min( dist_arr[ :n_step ] )) )
+    print( "[Iteration {}] [Movement Parameters] {} [Distance] {}".format( opt.get_numevals( ) + 1, np.array2string( pars[ : ], separator=',' ) , min( dist_arr[ :n_step ] )) )
 
     return min( dist_arr[ :n_step ] )
 

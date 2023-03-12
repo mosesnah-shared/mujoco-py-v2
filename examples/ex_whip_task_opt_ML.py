@@ -1,4 +1,5 @@
 import sys
+import nlopt 
 import numpy as np
 import mujoco
 import mujoco_viewer
@@ -62,7 +63,7 @@ while data.time <= T:
 
     # Torque 2: First-order Joint-space Impedance Controller
     # Calculate the minimum-jerk trajectory 
-    # nu is the number of control inputs
+	# nu is the number of control inputs
     q0  = np.zeros( model.nu )
     dq0 = np.zeros( model.nu )
 
