@@ -6,8 +6,7 @@ import argparse
 import os
 
 sys.path += [ "../MLmodules" ]
-import TD3
-from MLutils import ReplayBuffer
+from TD3 import TD3
 
 # Runs policy for X episodes and returns average reward
 # A fixed seed is used for the eval environment
