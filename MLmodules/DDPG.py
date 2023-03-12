@@ -12,17 +12,9 @@ sys.path += [ "../MLmodules" ]
 
 from MLutils import OUNoise, ReplayBuffer
 
-
+# Code from:
+# [REF] https://github.com/mosesnah-shared/machine-learning-tutorial/blob/main/notebooks/DDPG.ipynb
 device = torch.device( "cuda" if torch.cuda.is_available( ) else "cpu" )
-# Code from 
-# [REF] https://github.com/sfujim/TD3/blob/master/DDPG.py
-
-# Implementation of Deep Deterministic Policy Gradients (DDPG)
-# Paper: https://arxiv.org/abs/1509.02971
-# [Not the implementation used in the TD3 paper]
-
-# This website was also useful
-# [REF] https://towardsdatascience.com/deep-deterministic-policy-gradients-explained-2d94655a9b7b
 
 class Actor( nn.Module ):
     """
@@ -37,13 +29,9 @@ class Actor( nn.Module ):
         assert max_action >= 0
         self.max_action = max_action
 
-        # First Layer, changes array  with size N x ( n_state  ) to N x ( n_hidden )
+        # The Layers of the Neural Network
         self.l1 = nn.Linear(  n_state, n_hidden )
-
-        # Second Layer, changes array with size N x ( n_hidden ) to N x ( n_hidden )
         self.l2 = nn.Linear( n_hidden, n_hidden )
-
-        # Third Layer, changes array  with size N x ( n_hidden ) to N x ( n_action )
         self.l3 = nn.Linear( n_hidden, n_action )
         
     def forward( self, state ):
@@ -69,22 +57,18 @@ class Critic( nn.Module ):
         # Class inheritance. 
         super( Critic, self ).__init__()
 
-        # First Layer, changes array with size N x ( n_state + n_action ) to N x ( n_hidden )
         self.l1 = nn.Linear( n_state + n_action, n_hidden )
-
-        # Second Layer, changes array with size N x ( n_hidden ) to N x ( n_hidden )
-        self.l2 = nn.Linear( n_hidden, n_hidden )
-
-        # Third Layer, changes array with size N x ( n_hidden ) to N x ( 1 ), since Q is a scalar function. 
-        self.l3 = nn.Linear( n_hidden, 1 )
+        self.l2 = nn.Linear(           n_hidden, n_hidden )
+        self.l3 = nn.Linear(           n_hidden,        1 )
 
     
     def forward( self, state, action ):
 
         # Concatenation of state and action vector.
-        # The state  is assumed to be a 2D array with size N x n_s, where N is the number of samples
-        # The action is assumed to be a 2D array with size N x n_a, where N is the number of samples
-        # As a result of torch.cat( [ state, action ] along axis 1, ), we have size N x ( n_s + n_a ), and the dim = 0 must have the same size
+        # Note that the critic network update from batch of data 
+        # If batch size is N, then 
+        # state = N x n_s , action = N x n_a
+        # x = N x (n_s + n_a )
         x = torch.cat( [ state, action ], dim = 1 )
 
         # Applying Rectified Linear Unit (ReLU) to x
@@ -99,7 +83,7 @@ class Critic( nn.Module ):
         # The output is a N x 1 array. 
         return x
     
-class DDPGagent( object ):
+class DDPG( object ):
 
     def __init__( self, n_state, n_action, max_action = 1., gamma = 0.99, tau = 0.005 ):
 
@@ -109,7 +93,7 @@ class DDPGagent( object ):
         self.actor_optimizer   = torch.optim.Adam(  self.actor.parameters( ), lr = 1e-4 )
 
         # Critic Network, its target (copy) Network, and the ADAM optimizer.
-        self.critic            = Critic( n_state, n_action )
+        self.critic            = Critic( n_state, n_action ).to( device )
         self.critic_target     = copy.deepcopy( self.critic )
         self.critic_optimizer  = torch.optim.Adam(  self.critic.parameters( ), lr = 1e-3 )
 
@@ -125,8 +109,6 @@ class DDPGagent( object ):
 
         # Conduct the a = mu(s), where mu is a "deterministic function"
         # Unsqueeze makes an 1 x n_s array of state. 
-
-        print( state )
         state  = torch.from_numpy( state ).float( ).unsqueeze( 0 ).to( device )
 
         # Returns an 1 x n_a array of state
@@ -209,11 +191,12 @@ class DDPGagent( object ):
         
 
 if __name__ == "__main__":
+
     # Define instances of the environment, DDPG agent and the OU noise.
     env = gym.make( 'Pendulum-v1', g = 9.81 )
 
     # Set the random seeds
-    env.reset( seed = round( time.time( ) ) )
+    state, _ = env.reset( seed = round( time.time( ) ) )
     
     env.action_space.seed( round( time.time( ) ) )
     torch.manual_seed(     round( time.time( ) ) )
@@ -227,7 +210,7 @@ if __name__ == "__main__":
     max_action = float( env.action_space.high  )
 
     # Define the agent, noise and replay buffers
-    agent         = DDPGagent( n_state, n_action, max_action )
+    agent         = DDPG( n_state, n_action, max_action )
     OUnoise       = OUNoise( env.action_space )
     replay_buffer = ReplayBuffer( n_state, n_action )
 
@@ -251,7 +234,6 @@ if __name__ == "__main__":
     for episode in range( 500 ):
 
         # Initialize the gym environment and OU noise 
-        state = env.reset()
         OUnoise.reset( )
 
         # Initialize the episode's reward
@@ -270,7 +252,7 @@ if __name__ == "__main__":
             action = OUnoise.add_noise2action( action, step )
 
             # Run a single step of simulation
-            new_state, reward, done, _ = env.step( action )  
+            new_state, reward, done, truncated, _ = env.step( action )  
 
             # Add this to our replay buffer, note that push simply generates the tuple and add 
             replay_buffer.add( state, action, reward, new_state, done )
@@ -289,7 +271,7 @@ if __name__ == "__main__":
             best_model_val = episode_reward 
 
             # If this policy has a good result, save it 
-            if is_save_model: agent.save( "../models/DDPG_best_model" ) 
+            if is_save_model: agent.save( "../models/TD3_best_model" ) 
 
         # Once a single simulation is done, append the values that will be plotted later
         rewards.append( episode_reward )
@@ -303,4 +285,4 @@ if __name__ == "__main__":
 
     if is_save_video:
         clip = mpy.ImageSequenceClip( frames, fps = 30 )
-        clip.write_gif( "../videos/DDPG.gif" )
+        clip.write_gif( "../videos/TD3.gif" )

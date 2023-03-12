@@ -2,4 +2,5 @@
 .venv
 .DS_store
 tmp
+models
 __pycache__
