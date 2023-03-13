@@ -2,11 +2,13 @@
 import os 
 import time 
 import gymnasium as gym
-from datetime import datetime
-import numpy as np
 
+from datetime import datetime
+
+import numpy as np
 import torch
 import torch.nn as nn
+
 from torch.distributions import MultivariateNormal
 from torch.distributions import Categorical
 
@@ -206,12 +208,12 @@ class PPO:
             
         # Normalizing the rewards
         rewards = torch.tensor(rewards, dtype=torch.float32).to(device)
-        rewards = (rewards - rewards.mean()) / (rewards.std() + 1e-7)
+        rewards = ( rewards - rewards.mean( ) ) / ( rewards.std( ) + 1e-7 )
 
         # convert list to tensor
-        old_states = torch.squeeze(torch.stack(self.buffer.states, dim=0)).detach().to(device)
-        old_actions = torch.squeeze(torch.stack(self.buffer.actions, dim=0)).detach().to(device)
-        old_logprobs = torch.squeeze(torch.stack(self.buffer.logprobs, dim=0)).detach().to(device)
+        old_states       = torch.squeeze(torch.stack(self.buffer.states, dim=0)).detach().to(device)
+        old_actions      = torch.squeeze(torch.stack(self.buffer.actions, dim=0)).detach().to(device)
+        old_logprobs     = torch.squeeze(torch.stack(self.buffer.logprobs, dim=0)).detach().to(device)
         old_state_values = torch.squeeze(torch.stack(self.buffer.state_values, dim=0)).detach().to(device)
 
         # calculate advantages
