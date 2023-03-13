@@ -6,6 +6,7 @@ matplotlib
 mediapy
 pyyaml
 torch
+tensorboard
 gymnasium
 moviepy
 pygame

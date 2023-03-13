@@ -1,145 +1,171 @@
-import numpy as np
-import torch
-import gymnasium as gym
 import sys
-import argparse
-import os
+import time
+import torch
+import numpy 	 		as np
+import gymnasium 		as gym
+import moviepy.editor  	as mpy
 
 sys.path += [ "../MLmodules" ]
-from TD3 import TD3
+from TD3     import TD3
+from MLutils import OUNoise, ReplayBuffer
 
-# Runs policy for X episodes and returns average reward
-# A fixed seed is used for the eval environment
-def eval_policy(policy, env_name, seed, eval_episodes=10):
-	eval_env = gym.make(env_name)
-	# eval_env.seed(seed + 100)
+def train( n_epi = 400 ):
 
-	avg_reward = 0.
-	for _ in range(eval_episodes):
-		state, done = eval_env.reset(), False
-		while not done:
-			action = policy.select_action(np.array(state))
-			state, reward, done, _ = eval_env.step(action)
-			avg_reward += reward
+	# Call the Pendulum Example
+	env = gym.make( 'Pendulum-v1', g = 9.81 )
 
-	avg_reward /= eval_episodes
+	# Set the random number seeds and get the Initial State
+	env.reset( seed = round( time.time( ) ) )
 
-	print("---------------------------------------")
-	print(f"Evaluation over {eval_episodes} episodes: {avg_reward:.3f}")
-	print("---------------------------------------")
-	return avg_reward
+	# Set the random number seeds for others
+	env.action_space.seed( round( time.time( ) ) )
+	torch.manual_seed(     round( time.time( ) ) )
+	np.random.seed(        round( time.time( ) ) )
 
+	# Get the dimension of states and actions, and also the 
+	# [WARNING] This is for environments where we assume the mean of action is 0. 
+	n_state    = env.observation_space.shape[ 0 ] 
+	n_action   = env.action_space.shape[ 0 ]
+	max_action = float( env.action_space.high  )
+
+	# Define the agent, noise and replay buffers
+	agent         = TD3( n_state, n_action, max_action )
+	OUnoise       = OUNoise( env.action_space )
+	replay_buffer = ReplayBuffer( n_state, n_action )
+
+	# The number of "batch" that will be sampled from the replay buffer will be "batch_size" 
+	n_batch_size  = 256
+
+	# Saving these values to plot the performance at the end.
+	frames        = [ ]
+	whole_rewards = [ ]
+
+	# For the pendulum model the best reward is 0, hence saving a -infinity value. 
+	best_model_val = -np.inf
+	rewards       = [ ]
+	avg_rewards   = [ ]
+
+	for episode in range( n_epi ):
+		
+		# Initialize the OU noise 
+		OUnoise.reset( )
+
+		# Reset the Environment
+		state, _ = env.reset(  )	
+
+		# Initialize the episode's reward
+		episode_reward = 0
+		
+		# For pendulum v1 gym, a single simulation is maximum 500-steps long. 
+		# [REF] https://gymnasium.farama.org/environments/classic_control/cart_pole/
+		for step in range( 500 ):
+
+			# Get the action value from the deterministic policy Actor network.
+			action = agent.get_action( state )
+
+			if is_save_video : 
+				frames.append( env.render( ) )
+			else:
+				env.render( )
+
+			# Apply the OU noise on this action
+			action = OUnoise.add_noise2action( action, step )
+
+			# Run a single step of simulation
+			new_state, reward, done, truncated, _ = env.step( action )  
+
+			# Add this to our replay buffer, note that push simply generates the tuple and add 
+			replay_buffer.add( state, action, reward, new_state, done )
+			
+			# Once the agent memory is full, then update the policy via replay buffer.
+			if replay_buffer.current_size > n_batch_size: agent.update( replay_buffer, batch_size = n_batch_size )        
+			
+			# Update the state and reward value 
+			state = new_state
+			episode_reward += reward
+
+			if done or truncated:
+				break
+
+		if best_model_val <= episode_reward:
+			best_model_val = episode_reward 
+
+			# If this policy has a good result, save it 
+			agent.save( "../models/TD3/TD3" ) 
+
+		# Once a single simulation is done, append the values that will be plotted later
+		rewards.append( episode_reward )
+		avg_rewards.append( np.mean( rewards[ -10 : ] ) )
+		sys.stdout.write("episode: {}, reward: {}, average_reward: {} \n".format( episode, np.round( episode_reward, decimals = 2 ), avg_rewards[ -1 ] ) ) 
+
+	whole_rewards.append(  rewards  )
+	env.close( )
+
+def replay( is_save_video ):
+
+	# Call the Pendulum Example
+	env = gym.make( 'Pendulum-v1', g = 9.81, render_mode = "rgb_array" if is_save_video else "human" )
+
+	# Set the random number seeds and get the Initial State
+	env.reset( seed = round( time.time( ) ) )
+
+	# Set the random number seeds for others
+	env.action_space.seed( round( time.time( ) ) )
+	torch.manual_seed(     round( time.time( ) ) )
+	np.random.seed(        round( time.time( ) ) )
+
+	# Get the dimension of states and actions, and also the 
+	# [WARNING] This is for environments where we assume the mean of action is 0. 
+	n_state    = env.observation_space.shape[ 0 ] 
+	n_action   = env.action_space.shape[ 0 ]
+	max_action = float( env.action_space.high  )
+
+	model_path = "../models/TD3/TD3"
+	agent      = TD3( n_state, n_action, max_action )
+	agent.load( model_path )
+
+	# Reset the Environment
+	state, _ = env.reset(  )	
+
+	frames = [ ]
+	
+	for _ in range( 500 ):
+
+		if is_save_video: 
+			frames.append( env.render( )  ) 
+
+		else:
+			env.render( )
+
+		# Get the choice of action and the pi( a_t | s_t ) for the gradient calculation
+		action = agent.get_action( state )
+		new_state, _, done, truncated, _ = env.step( action )
+
+		# If the trail encounters the terminal state
+		if done or truncated: 
+			break
+		
+		state = new_state
+
+	# Save Video
+	env.close( )
+
+	if is_save_video:
+		clip = mpy.ImageSequenceClip( frames, fps = 30 )
+		clip.write_gif( "../videos/TD3.gif" )
 
 if __name__ == "__main__":
+
 	
-	parser = argparse.ArgumentParser()
-	parser.add_argument("--policy", default="TD3")                  # Policy name (TD3, DDPG or OurDDPG)
-	parser.add_argument("--env", default="HalfCheetah-v4")          # OpenAI gym environment name
-	parser.add_argument("--seed", default=0, type=int)              # Sets Gym, PyTorch and Numpy seeds
-	parser.add_argument("--start_timesteps", default=25e3, type=int)# Time steps initial random policy is used
-	parser.add_argument("--eval_freq", default=5e3, type=int)       # How often (time steps) we evaluate
-	parser.add_argument("--max_timesteps", default=1e6, type=int)   # Max time steps to run environment
-	parser.add_argument("--expl_noise", default=0.1)                # Std of Gaussian exploration noise
-	parser.add_argument("--batch_size", default=256, type=int)      # Batch size for both actor and critic
-	parser.add_argument("--discount", default=0.99)                 # Discount factor
-	parser.add_argument("--tau", default=0.005)                     # Target network update rate
-	parser.add_argument("--policy_noise", default=0.2)              # Noise added to target policy during critic update
-	parser.add_argument("--noise_clip", default=0.5)                # Range to clip target policy noise
-	parser.add_argument("--policy_freq", default=2, type=int)       # Frequency of delayed policy updates
-	parser.add_argument("--save_model", action="store_true")        # Save model and optimizer parameters
-	parser.add_argument("--load_model", default="")                 # Model load file name, "" doesn't load, "default" uses file_name
-	args = parser.parse_args()
+	is_train_model = True
+	is_load_model = False
+	is_save_video = True
 
-	file_name = f"{args.policy}_{args.env}_{args.seed}"
-	print("---------------------------------------")
-	print(f"Policy: {args.policy}, Env: {args.env}, Seed: {args.seed}")
-	print("---------------------------------------")
-
-	if not os.path.exists("./results"):
-		os.makedirs("./results")
-
-	if args.save_model and not os.path.exists("./models"):
-		os.makedirs("./models")
-
-	env = gym.make(args.env)
-
-	# Set seeds
-	# env.seed(args.seed)
-	env.action_space.seed(args.seed)
-	torch.manual_seed(args.seed)
-	np.random.seed(args.seed)
+	if is_train_model and not is_load_model: 
+		train(  )
 	
-	state_dim = env.observation_space.shape[0]
-	action_dim = env.action_space.shape[0] 
-	max_action = float(env.action_space.high[0])
+	elif is_load_model and not is_train_model:
+		replay( is_save_video )
 
-	kwargs = {
-		"state_dim": state_dim,
-		"action_dim": action_dim,
-		"max_action": max_action,
-		"discount": args.discount,
-		"tau": args.tau,
-	}
-
-	# Initialize policy
-	# Target policy smoothing is scaled wrt the action scale
-	kwargs["policy_noise"] = args.policy_noise * max_action
-	kwargs["noise_clip"] = args.noise_clip * max_action
-	kwargs["policy_freq"] = args.policy_freq
-	policy = TD3.TD3(**kwargs)
-
-	if args.load_model != "":
-		policy_file = file_name if args.load_model == "default" else args.load_model
-		policy.load(f"./models/{policy_file}")
-
-	replay_buffer = ReplayBuffer(state_dim, action_dim)
-	
-	# Evaluate untrained policy
-	evaluations = [eval_policy(policy, args.env, args.seed)]
-
-	state, done = env.reset(), False
-	episode_reward = 0
-	episode_timesteps = 0
-	episode_num = 0
-
-	for t in range(int(args.max_timesteps)):
-		
-		episode_timesteps += 1
-
-		# Select action randomly or according to policy
-		if t < args.start_timesteps:
-			action = env.action_space.sample()
-		else:
-			action = (
-				policy.select_action(np.array(state))
-				+ np.random.normal(0, max_action * args.expl_noise, size=action_dim)
-			).clip(-max_action, max_action)
-
-		# Perform action
-		next_state, reward, done, _ = env.step(action) 
-		done_bool = float(done) if episode_timesteps < env._max_episode_steps else 0
-
-		# Store data in replay buffer
-		replay_buffer.add(state, action, next_state, reward, done_bool)
-
-		state = next_state
-		episode_reward += reward
-
-		# Train agent after collecting sufficient data
-		if t >= args.start_timesteps:
-			policy.train(replay_buffer, args.batch_size)
-
-		if done: 
-			# +1 to account for 0 indexing. +0 on ep_timesteps since it will increment +1 even if done=True
-			print(f"Total T: {t+1} Episode Num: {episode_num+1} Episode T: {episode_timesteps} Reward: {episode_reward:.3f}")
-			# Reset environment
-			state, done = env.reset(), False
-			episode_reward = 0
-			episode_timesteps = 0
-			episode_num += 1 
-
-		# Evaluate episode
-		if (t + 1) % args.eval_freq == 0:
-			evaluations.append(eval_policy(policy, args.env, args.seed))
-			np.save(f"./results/{file_name}", evaluations)
-			if args.save_model: policy.save(f"./models/{file_name}")
+	else:
+		pass

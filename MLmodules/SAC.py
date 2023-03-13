@@ -1,506 +1,465 @@
+import time
+import copy
+from argparse import ArgumentParser
 
-import argparse
-import datetime
 import gymnasium as gym
 import numpy as np
-import itertools
-import random
-import time
-import math
-import os
 import torch
-import pickle
-import torch.nn.functional as F
-from torch.optim import Adam
-
 import torch.nn as nn
-from torch.distributions import Normal
-from torch.utils.tensorboard import SummaryWriter
+import torch.nn.functional as F
+
+from torch.distributions import constraints
+from torch.distributions.transforms import Transform
+from torch.distributions import Normal, TransformedDistribution
+
+from torch.nn.functional import softplus
 
 
-# REF
-# https://github.com/pranz24/pytorch-soft-actor-critic/blob/master/sac.py
+import math 
+
+from collections import deque, namedtuple
+from numpy.random import default_rng
 
 
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-def create_log_gaussian(mean, log_std, t):
-    quadratic = -((0.5 * (t - mean) / (log_std.exp())).pow(2))
-    l = mean.shape
-    log_z = log_std
-    z = l[-1] * math.log(2 * math.pi)
-    log_p = quadratic.sum(dim=-1) - log_z.sum(dim=-1) - 0.5 * z
-    return log_p
-
-def logsumexp(inputs, dim=None, keepdim=False):
-    if dim is None:
-        inputs = inputs.view(-1)
-        dim = 0
-    s, _ = torch.max(inputs, dim=dim, keepdim=True)
-    outputs = s + (inputs - s).exp().sum(dim=dim, keepdim=True).log()
-    if not keepdim:
-        outputs = outputs.squeeze(dim)
-    return outputs
-
-def soft_update(target, source, tau):
-    for target_param, param in zip(target.parameters(), source.parameters()):
-        target_param.data.copy_(target_param.data * (1.0 - tau) + param.data * tau)
-
-def hard_update(target, source):
-    for target_param, param in zip(target.parameters(), source.parameters()):
-        target_param.data.copy_(param.data)
-
-LOG_SIG_MAX = 2
-LOG_SIG_MIN = -20
-epsilon = 1e-6
-
-# Initialize Policy weights
-def weights_init_(m):
-    if isinstance(m, nn.Linear):
-        torch.nn.init.xavier_uniform_(m.weight, gain=1)
-        torch.nn.init.constant_(m.bias, 0)
-
-
-class ValueNetwork(nn.Module):
-    def __init__(self, num_inputs, hidden_dim):
-        super(ValueNetwork, self).__init__()
-
-        self.linear1 = nn.Linear(num_inputs, hidden_dim)
-        self.linear2 = nn.Linear(hidden_dim, hidden_dim)
-        self.linear3 = nn.Linear(hidden_dim, 1)
-
-        self.apply(weights_init_)
-
-    def forward(self, state):
-        x = F.relu(self.linear1(state))
-        x = F.relu(self.linear2(x))
-        x = self.linear3(x)
-        return x
-
-
-class QNetwork(nn.Module):
-    def __init__(self, num_inputs, num_actions, hidden_dim):
-        super(QNetwork, self).__init__()
-
-        # Q1 architecture
-        self.linear1 = nn.Linear(num_inputs + num_actions, hidden_dim)
-        self.linear2 = nn.Linear(hidden_dim, hidden_dim)
-        self.linear3 = nn.Linear(hidden_dim, 1)
-
-        # Q2 architecture
-        self.linear4 = nn.Linear(num_inputs + num_actions, hidden_dim)
-        self.linear5 = nn.Linear(hidden_dim, hidden_dim)
-        self.linear6 = nn.Linear(hidden_dim, 1)
-
-        self.apply(weights_init_)
-
-    def forward(self, state, action):
-        xu = torch.cat([state, action], 1)
-        
-        x1 = F.relu(self.linear1(xu))
-        x1 = F.relu(self.linear2(x1))
-        x1 = self.linear3(x1)
-
-        x2 = F.relu(self.linear4(xu))
-        x2 = F.relu(self.linear5(x2))
-        x2 = self.linear6(x2)
-
-        return x1, x2
-
-
-class GaussianPolicy(nn.Module):
-    def __init__(self, num_inputs, num_actions, hidden_dim, action_space=None):
-        super(GaussianPolicy, self).__init__()
-        
-        self.linear1 = nn.Linear(num_inputs, hidden_dim)
-        self.linear2 = nn.Linear(hidden_dim, hidden_dim)
-
-        self.mean_linear = nn.Linear(hidden_dim, num_actions)
-        self.log_std_linear = nn.Linear(hidden_dim, num_actions)
-
-        self.apply(weights_init_)
-
-        # action rescaling
-        if action_space is None:
-            self.action_scale = torch.tensor(1.)
-            self.action_bias = torch.tensor(0.)
-        else:
-            self.action_scale = torch.FloatTensor(
-                (action_space.high - action_space.low) / 2.)
-            self.action_bias = torch.FloatTensor(
-                (action_space.high + action_space.low) / 2.)
-
-    def forward(self, state):
-        x = F.relu(self.linear1(state))
-        x = F.relu(self.linear2(x))
-        mean = self.mean_linear(x)
-        log_std = self.log_std_linear(x)
-        log_std = torch.clamp(log_std, min=LOG_SIG_MIN, max=LOG_SIG_MAX)
-        return mean, log_std
-
-    def sample(self, state):
-        mean, log_std = self.forward(state)
-        std = log_std.exp()
-        normal = Normal(mean, std)
-        x_t = normal.rsample()  # for reparameterization trick (mean + std * N(0,1))
-        y_t = torch.tanh(x_t)
-        action = y_t * self.action_scale + self.action_bias
-        log_prob = normal.log_prob(x_t)
-        # Enforcing Action Bound
-        log_prob -= torch.log(self.action_scale * (1 - y_t.pow(2)) + epsilon)
-        log_prob = log_prob.sum(1, keepdim=True)
-        mean = torch.tanh(mean) * self.action_scale + self.action_bias
-        return action, log_prob, mean
-
-    def to(self, device):
-        self.action_scale = self.action_scale.to(device)
-        self.action_bias = self.action_bias.to(device)
-        return super(GaussianPolicy, self).to(device)
+Transition = namedtuple('Transition', ('state', 'action', 'reward', 'nextstate', 'real_done'))
 
 
 
-class ReplayMemory:
-    def __init__(self, capacity, seed):
-        random.seed(seed)
-        self.capacity = capacity
-        self.buffer = []
-        self.position = 0
+class MeanStdevFilter():
+    def __init__(self, shape, clip=3.0):
+        self.eps = 1e-4
+        self.shape = shape
+        self.clip = clip
+        self._count = 0
+        self._running_sum = np.zeros(shape)
+        self._running_sum_sq = np.zeros(shape) + self.eps
+        self.mean = np.zeros(shape)
+        self.stdev = np.ones(shape) * self.eps
 
-    def push(self, state, action, reward, next_state, done):
-        if len(self.buffer) < self.capacity:
-            self.buffer.append(None)
-        self.buffer[self.position] = (state, action, reward, next_state, done)
-        self.position = (self.position + 1) % self.capacity
+    def update(self, x):
+        if len(x.shape) == 1:
+            x = x.reshape(1,-1)
+        self._running_sum += np.sum(x, axis=0)
+        self._running_sum_sq += np.sum(np.square(x), axis=0)
+        # assume 2D data
+        self._count += x.shape[0]
+        self.mean = self._running_sum / self._count
+        self.stdev = np.sqrt(
+            np.maximum(
+                self._running_sum_sq / self._count - self.mean**2,
+                 self.eps
+                 ))
+    
+    def __call__(self, x):
+        return np.clip(((x - self.mean) / self.stdev), -self.clip, self.clip)
 
-    def sample(self, batch_size):
-        batch = random.sample(self.buffer, batch_size)
-        state, action, reward, next_state, done = map(np.stack, zip(*batch))
-        return state, action, reward, next_state, done
+    def invert(self, x):
+        return (x * self.stdev) + self.mean
+
+class ReplayPool:
+
+    def __init__(self, action_dim, state_dim, capacity=1e6):
+        self.capacity = int(capacity)
+        self._action_dim = action_dim
+        self._state_dim = state_dim
+        self._pointer = 0
+        self._size = 0
+        self._init_memory()
+        self._rng = default_rng()
+
+    def _init_memory(self):
+        self._memory = {
+            'state': np.zeros((self.capacity, self._state_dim), dtype='float32'),
+            'action': np.zeros((self.capacity, self._action_dim), dtype='float32'),
+            'reward': np.zeros((self.capacity), dtype='float32'),
+            'nextstate': np.zeros((self.capacity, self._state_dim), dtype='float32'),
+            'real_done': np.zeros((self.capacity), dtype='bool')
+        }
+
+    def push(self, transition: Transition):
+
+        # Handle 1-D Data
+        num_samples = transition.state.shape[0] if len(transition.state.shape) > 1 else 1
+        idx = np.arange(self._pointer, self._pointer + num_samples) % self.capacity
+
+        for key, value in transition._asdict().items():
+            self._memory[key][idx] = value
+
+        self._pointer = (self._pointer + num_samples) % self.capacity
+        self._size = min(self._size + num_samples, self.capacity)
+
+    def _return_from_idx(self, idx):
+        sample = {k: tuple(v[idx]) for k,v in self._memory.items()}
+        return Transition(**sample)
+
+    def sample(self, batch_size: int, unique: bool = True):
+        idx = np.random.randint(0, self._size, batch_size) if not unique else self._rng.choice(self._size, size=batch_size, replace=False)
+        return self._return_from_idx(idx)
+
+    def sample_all(self):
+        return self._return_from_idx(np.arange(0, self._size))
 
     def __len__(self):
-        return len(self.buffer)
+        return self._size
 
-    def save_buffer(self, env_name, suffix="", save_path=None):
-        if not os.path.exists('checkpoints/'):
-            os.makedirs('checkpoints/')
+    def clear_pool(self):
+        self._init_memory()
 
-        if save_path is None:
-            save_path = "checkpoints/sac_buffer_{}_{}".format(env_name, suffix)
-        print('Saving buffer to {}'.format(save_path))
+    def initialise(self, old_pool):
+        # Not Tested
+        old_memory = old_pool.sample_all()
+        for key in self._memory:
+            self._memory[key] = np.append(self._memory[key], old_memory[key], 0)
 
-        with open(save_path, 'wb') as f:
-            pickle.dump(self.buffer, f)
 
-    def load_buffer(self, save_path):
-        print('Loading buffer from {}'.format(save_path))
+# Taken from: https://github.com/pytorch/pytorch/pull/19785/files
+# The composition of affine + sigmoid + affine transforms is unstable numerically
+# tanh transform is (2 * sigmoid(2x) - 1)
+# Old Code Below:
+# transforms = [AffineTransform(loc=0, scale=2), SigmoidTransform(), AffineTransform(loc=-1, scale=2)]
+class TanhTransform(Transform):
+    r"""
+    Transform via the mapping :math:`y = \tanh(x)`.
+    It is equivalent to
+    ```
+    ComposeTransform([AffineTransform(0., 2.), SigmoidTransform(), AffineTransform(-1., 2.)])
+    ```
+    However this might not be numerically stable, thus it is recommended to use `TanhTransform`
+    instead.
+    Note that one should use `cache_size=1` when it comes to `NaN/Inf` values.
+    """
+    domain = constraints.real
+    codomain = constraints.interval(-1.0, 1.0)
+    bijective = True
+    sign = +1
 
-        with open(save_path, "rb") as f:
-            self.buffer = pickle.load(f)
-            self.position = len(self.buffer) % self.capacity
+    @staticmethod
+    def atanh(x):
+        return 0.5 * (x.log1p() - (-x).log1p())
 
-class DeterministicPolicy(nn.Module):
-    def __init__(self, num_inputs, num_actions, hidden_dim, action_space=None):
-        super(DeterministicPolicy, self).__init__()
-        self.linear1 = nn.Linear(num_inputs, hidden_dim)
-        self.linear2 = nn.Linear(hidden_dim, hidden_dim)
+    def __eq__(self, other):
+        return isinstance(other, TanhTransform)
 
-        self.mean = nn.Linear(hidden_dim, num_actions)
-        self.noise = torch.Tensor(num_actions)
+    def _call(self, x):
+        return x.tanh()
 
-        self.apply(weights_init_)
+    def _inverse(self, y):
+        # We do not clamp to the boundary here as it may degrade the performance of certain algorithms.
+        # one should use `cache_size=1` instead
+        return self.atanh(y)
 
-        # action rescaling
-        if action_space is None:
-            self.action_scale = 1.
-            self.action_bias = 0.
+    def log_abs_det_jacobian(self, x, y):
+        # We use a formula that is more numerically stable, see details in the following link
+        # https://github.com/tensorflow/probability/blob/master/tensorflow_probability/python/bijectors/tanh.py#L69-L80
+        return 2. * (math.log(2.) - x - softplus(-2. * x))
+
+
+class MLPNetwork(nn.Module):
+    
+    def __init__(self, input_dim, output_dim, hidden_size=256):
+        super(MLPNetwork, self).__init__()
+        self.network = nn.Sequential(
+                        nn.Linear(input_dim, hidden_size),
+                        nn.ReLU(),
+                        nn.Linear(hidden_size, hidden_size),
+                        nn.ReLU(),
+                        nn.Linear(hidden_size, hidden_size),
+                        nn.ReLU(),
+                        nn.Linear(hidden_size, output_dim),
+                        )
+    
+    def forward(self, x):
+        return self.network(x)
+
+
+class Policy(nn.Module):
+
+    def __init__(self, state_dim, action_dim, hidden_size=256):
+        super(Policy, self).__init__()
+        self.action_dim = action_dim
+        self.network = MLPNetwork(state_dim, action_dim * 2, hidden_size)
+
+    def forward(self, x, get_logprob=False):
+        mu_logstd = self.network(x)
+        mu, logstd = mu_logstd.chunk(2, dim=1)
+        logstd = torch.clamp(logstd, -20, 2)
+        std = logstd.exp()
+        dist = Normal(mu, std)
+        transforms = [TanhTransform(cache_size=1)]
+        dist = TransformedDistribution(dist, transforms)
+        action = dist.rsample()
+        if get_logprob:
+            logprob = dist.log_prob(action).sum(axis=-1, keepdim=True)
         else:
-            self.action_scale = torch.FloatTensor(
-                (action_space.high - action_space.low) / 2.)
-            self.action_bias = torch.FloatTensor(
-                (action_space.high + action_space.low) / 2.)
-
-    def forward(self, state):
-        x = F.relu(self.linear1(state))
-        x = F.relu(self.linear2(x))
-        mean = torch.tanh(self.mean(x)) * self.action_scale + self.action_bias
-        return mean
-
-    def sample(self, state):
-        mean = self.forward(state)
-        noise = self.noise.normal_(0., std=0.1)
-        noise = noise.clamp(-0.25, 0.25)
-        action = mean + noise
-        return action, torch.tensor(0.), mean
-
-    def to(self, device):
-        self.action_scale = self.action_scale.to(device)
-        self.action_bias = self.action_bias.to(device)
-        self.noise = self.noise.to(device)
-        return super(DeterministicPolicy, self).to(device)
+            logprob = None
+        mean = torch.tanh(mu)
+        return action, logprob, mean
 
 
-class SAC(object):
-    def __init__(self, num_inputs, action_space, args):
+class DoubleQFunc(nn.Module):
+    
+    def __init__(self, state_dim, action_dim, hidden_size=256):
+        super(DoubleQFunc, self).__init__()
+        self.network1 = MLPNetwork(state_dim + action_dim, 1, hidden_size)
+        self.network2 = MLPNetwork(state_dim + action_dim, 1, hidden_size)
 
-        self.gamma = args.gamma
-        self.tau = args.tau
-        self.alpha = args.alpha
+    def forward(self, state, action):
+        x = torch.cat((state, action), dim=1)
+        return self.network1(x), self.network2(x)
 
-        self.policy_type = args.policy
-        self.target_update_interval = args.target_update_interval
-        self.automatic_entropy_tuning = args.automatic_entropy_tuning
 
-        self.device = torch.device("cuda" if args.cuda else "cpu")
+def evaluate_agent(env, agent, state_filter, n_starts=1):
+    reward_sum = 0
+    for _ in range(n_starts):
+        done = False
+        truncated = False
+        state, _ = env.reset()
 
-        self.critic = QNetwork(num_inputs, action_space.shape[0], args.hidden_size).to(device=self.device)
-        self.critic_optim = Adam(self.critic.parameters(), lr=args.lr)
+        while (not done and not truncated ):
 
-        self.critic_target = QNetwork(num_inputs, action_space.shape[0], args.hidden_size).to(self.device)
-        hard_update(self.critic_target, self.critic)
+            action = agent.get_action( state, state_filter=state_filter, deterministic=True )
+            
 
-        if self.policy_type == "Gaussian":
-            # Target Entropy = −dim(A) (e.g. , -6 for HalfCheetah-v2) as given in the paper
-            if self.automatic_entropy_tuning is True:
-                self.target_entropy = -torch.prod(torch.Tensor(action_space.shape).to(self.device)).item()
-                self.log_alpha = torch.zeros(1, requires_grad=True, device=self.device)
-                self.alpha_optim = Adam([self.log_alpha], lr=args.lr)
+            nextstate, reward, done, truncated,  _ = env.step( [ action ] )
+            reward_sum += reward
+            state = nextstate
 
-            self.policy = GaussianPolicy(num_inputs, action_space.shape[0], args.hidden_size, action_space).to(self.device)
-            self.policy_optim = Adam(self.policy.parameters(), lr=args.lr)
+    return reward_sum / n_starts
 
-        else:
-            self.alpha = 0
-            self.automatic_entropy_tuning = False
-            self.policy = DeterministicPolicy(num_inputs, action_space.shape[0], args.hidden_size, action_space).to(self.device)
-            self.policy_optim = Adam(self.policy.parameters(), lr=args.lr)
 
-    def select_action(self, state, evaluate=False):
-        state = torch.FloatTensor(state).to(self.device).unsqueeze(0)
-        if evaluate is False:
-            action, _, _ = self.policy.sample(state)
-        else:
-            _, _, action = self.policy.sample(state)
-        return action.detach().cpu().numpy()[0]
+class SAC_Agent:
 
-    def update_parameters(self, memory, batch_size, updates):
-        # Sample a batch from memory
-        state_batch, action_batch, reward_batch, next_state_batch, mask_batch = memory.sample(batch_size=batch_size)
+    def __init__(self, seed, state_dim, action_dim, lr=3e-4, gamma=0.99, tau=5e-3, batchsize=256, hidden_size=256, update_interval=1, buffer_size=int(1e6), target_entropy=None):
+        self.gamma = gamma
+        self.tau = tau
+        self.target_entropy = target_entropy if target_entropy else -action_dim
+        self.batchsize = batchsize
+        self.update_interval = update_interval
 
-        state_batch = torch.FloatTensor(state_batch).to(self.device)
-        next_state_batch = torch.FloatTensor(next_state_batch).to(self.device)
-        action_batch = torch.FloatTensor(action_batch).to(self.device)
-        reward_batch = torch.FloatTensor(reward_batch).to(self.device).unsqueeze(1)
-        mask_batch = torch.FloatTensor(mask_batch).to(self.device).unsqueeze(1)
+        torch.manual_seed(seed)
 
+        # aka critic
+        self.q_funcs = DoubleQFunc(state_dim, action_dim, hidden_size=hidden_size).to(device)
+        self.target_q_funcs = copy.deepcopy(self.q_funcs)
+        self.target_q_funcs.eval()
+        for p in self.target_q_funcs.parameters():
+            p.requires_grad = False
+
+        # aka actor
+        self.policy = Policy(state_dim, action_dim, hidden_size=hidden_size).to(device)
+
+        # aka temperature
+        self.log_alpha = torch.zeros(1, requires_grad=True, device=device)
+
+        self.q_optimizer = torch.optim.Adam(self.q_funcs.parameters(), lr=lr)
+        self.policy_optimizer = torch.optim.Adam(self.policy.parameters(), lr=lr)
+        self.temp_optimizer = torch.optim.Adam([self.log_alpha], lr=lr)
+
+        self.replay_pool = ReplayPool(action_dim=action_dim, state_dim=state_dim, capacity=int(1e6))
+    
+    def get_action(self, state, state_filter=None, deterministic=False):
+        if state_filter:
+            state = state_filter(state)
         with torch.no_grad():
-            next_state_action, next_state_log_pi, _ = self.policy.sample(next_state_batch)
-            qf1_next_target, qf2_next_target = self.critic_target(next_state_batch, next_state_action)
-            min_qf_next_target = torch.min(qf1_next_target, qf2_next_target) - self.alpha * next_state_log_pi
-            next_q_value = reward_batch + mask_batch * self.gamma * (min_qf_next_target)
-        qf1, qf2 = self.critic(state_batch, action_batch)  # Two Q-functions to mitigate positive bias in the policy improvement step
-        qf1_loss = F.mse_loss(qf1, next_q_value)  # JQ = 𝔼(st,at)~D[0.5(Q1(st,at) - r(st,at) - γ(𝔼st+1~p[V(st+1)]))^2]
-        qf2_loss = F.mse_loss(qf2, next_q_value)  # JQ = 𝔼(st,at)~D[0.5(Q1(st,at) - r(st,at) - γ(𝔼st+1~p[V(st+1)]))^2]
-        qf_loss = qf1_loss + qf2_loss
+            action, _, mean = self.policy(torch.Tensor(state).view(1,-1).to(device))
+        if deterministic:
+            return mean.squeeze().cpu().numpy()
+        return np.atleast_1d(action.squeeze().cpu().numpy())
 
-        self.critic_optim.zero_grad()
-        qf_loss.backward()
-        self.critic_optim.step()
+    def update_target(self):
+        """moving average update of target networks"""
+        with torch.no_grad():
+            for target_q_param, q_param in zip(self.target_q_funcs.parameters(), self.q_funcs.parameters()):
+                target_q_param.data.copy_(self.tau * q_param.data + (1.0 - self.tau) * target_q_param.data)
 
-        pi, log_pi, _ = self.policy.sample(state_batch)
+    def update_q_functions(self, state_batch, action_batch, reward_batch, nextstate_batch, done_batch):
+        with torch.no_grad():
+            nextaction_batch, logprobs_batch, _ = self.policy(nextstate_batch, get_logprob=True)
+            q_t1, q_t2 = self.target_q_funcs(nextstate_batch, nextaction_batch)
+            # take min to mitigate positive bias in q-function training
+            q_target = torch.min(q_t1, q_t2)
+            value_target = reward_batch + (1.0 - done_batch) * self.gamma * (q_target - self.alpha * logprobs_batch)
+        q_1, q_2 = self.q_funcs(state_batch, action_batch)
+        loss_1 = F.mse_loss(q_1, value_target)
+        loss_2 = F.mse_loss(q_2, value_target)
+        return loss_1, loss_2
 
-        qf1_pi, qf2_pi = self.critic(state_batch, pi)
-        min_qf_pi = torch.min(qf1_pi, qf2_pi)
+    def update_policy_and_temp(self, state_batch):
+        action_batch, logprobs_batch, _ = self.policy(state_batch, get_logprob=True)
+        q_b1, q_b2 = self.q_funcs(state_batch, action_batch)
+        qval_batch = torch.min(q_b1, q_b2)
+        policy_loss = (self.alpha * logprobs_batch - qval_batch).mean()
+        temp_loss = -self.alpha * (logprobs_batch.detach() + self.target_entropy).mean()
+        return policy_loss, temp_loss
 
-        policy_loss = ((self.alpha * log_pi) - min_qf_pi).mean() # Jπ = 𝔼st∼D,εt∼N[α * logπ(f(εt;st)|st) − Q(st,f(εt;st))]
+    def optimize(self, n_updates, state_filter=None):
+        q1_loss, q2_loss, pi_loss, a_loss = 0, 0, 0, 0
+        for i in range(n_updates):
+            samples = self.replay_pool.sample(self.batchsize)
 
-        self.policy_optim.zero_grad()
-        policy_loss.backward()
-        self.policy_optim.step()
-
-        if self.automatic_entropy_tuning:
-            alpha_loss = -(self.log_alpha * (log_pi + self.target_entropy).detach()).mean()
-
-            self.alpha_optim.zero_grad()
-            alpha_loss.backward()
-            self.alpha_optim.step()
-
-            self.alpha = self.log_alpha.exp()
-            alpha_tlogs = self.alpha.clone() # For TensorboardX logs
-        else:
-            alpha_loss = torch.tensor(0.).to(self.device)
-            alpha_tlogs = torch.tensor(self.alpha) # For TensorboardX logs
-
-
-        if updates % self.target_update_interval == 0:
-            soft_update(self.critic_target, self.critic, self.tau)
-
-        return qf1_loss.item(), qf2_loss.item(), policy_loss.item(), alpha_loss.item(), alpha_tlogs.item()
-
-    # Save model parameters
-    def save_checkpoint(self, env_name, suffix="", ckpt_path=None):
-        if not os.path.exists('checkpoints/'):
-            os.makedirs('checkpoints/')
-        if ckpt_path is None:
-            ckpt_path = "checkpoints/sac_checkpoint_{}_{}".format(env_name, suffix)
-        print('Saving models to {}'.format(ckpt_path))
-        torch.save({'policy_state_dict': self.policy.state_dict(),
-                    'critic_state_dict': self.critic.state_dict(),
-                    'critic_target_state_dict': self.critic_target.state_dict(),
-                    'critic_optimizer_state_dict': self.critic_optim.state_dict(),
-                    'policy_optimizer_state_dict': self.policy_optim.state_dict()}, ckpt_path)
-
-    # Load model parameters
-    def load_checkpoint(self, ckpt_path, evaluate=False):
-        print('Loading models from {}'.format(ckpt_path))
-        if ckpt_path is not None:
-            checkpoint = torch.load(ckpt_path)
-            self.policy.load_state_dict(checkpoint['policy_state_dict'])
-            self.critic.load_state_dict(checkpoint['critic_state_dict'])
-            self.critic_target.load_state_dict(checkpoint['critic_target_state_dict'])
-            self.critic_optim.load_state_dict(checkpoint['critic_optimizer_state_dict'])
-            self.policy_optim.load_state_dict(checkpoint['policy_optimizer_state_dict'])
-
-            if evaluate:
-                self.policy.eval()
-                self.critic.eval()
-                self.critic_target.eval()
+            if state_filter:
+                state_batch = torch.FloatTensor(state_filter(samples.state)).to(device)
+                nextstate_batch = torch.FloatTensor(state_filter(samples.nextstate)).to(device)
             else:
-                self.policy.train()
-                self.critic.train()
-                self.critic_target.train()
+                state_batch = torch.FloatTensor(samples.state).to(device)
+                nextstate_batch = torch.FloatTensor(samples.nextstate).to(device)
+            action_batch = torch.FloatTensor(samples.action).to(device)
+            reward_batch = torch.FloatTensor(samples.reward).to(device).unsqueeze(1)
+            done_batch = torch.FloatTensor(samples.real_done).to(device).unsqueeze(1)
+            
+            # update q-funcs
+            q1_loss_step, q2_loss_step = self.update_q_functions(state_batch, action_batch, reward_batch, nextstate_batch, done_batch)
+            q_loss_step = q1_loss_step + q2_loss_step
+            self.q_optimizer.zero_grad()
+            q_loss_step.backward()
+            self.q_optimizer.step()
 
+            # update policy and temperature parameter
+            for p in self.q_funcs.parameters():
+                p.requires_grad = False
+            pi_loss_step, a_loss_step = self.update_policy_and_temp(state_batch)
+            self.policy_optimizer.zero_grad()
+            pi_loss_step.backward()
+            self.policy_optimizer.step()
+            self.temp_optimizer.zero_grad()
+            a_loss_step.backward()
+            self.temp_optimizer.step()
+            for p in self.q_funcs.parameters():
+                p.requires_grad = True
 
+            q1_loss += q1_loss_step.detach().item()
+            q2_loss += q2_loss_step.detach().item()
+            pi_loss += pi_loss_step.detach().item()
+            a_loss += a_loss_step.detach().item()
+            if i % self.update_interval == 0:
+                self.update_target()
+        return q1_loss, q2_loss, pi_loss, a_loss
+
+    @property
+    def alpha(self):
+        return self.log_alpha.exp()
+    
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='PyTorch Soft Actor-Critic Args')
-    parser.add_argument('--env-name', default="HalfCheetah-v2",
-                        help='Mujoco Gym environment (default: HalfCheetah-v2)')
-    parser.add_argument('--policy', default="Gaussian",
-                        help='Policy Type: Gaussian | Deterministic (default: Gaussian)')
-    parser.add_argument('--eval', type=bool, default=True,
-                        help='Evaluates a policy a policy every 10 episode (default: True)')
-    parser.add_argument('--gamma', type=float, default=0.99, metavar='G',
-                        help='discount factor for reward (default: 0.99)')
-    parser.add_argument('--tau', type=float, default=0.005, metavar='G',
-                        help='target smoothing coefficient(τ) (default: 0.005)')
-    parser.add_argument('--lr', type=float, default=0.0003, metavar='G',
-                        help='learning rate (default: 0.0003)')
-    parser.add_argument('--alpha', type=float, default=0.2, metavar='G',
-                        help='Temperature parameter alpha determines the relative importance of the entropy\
-                                term against the reward (default: 0.2)')
-    parser.add_argument('--automatic_entropy_tuning', type=bool, default=False, metavar='G',
-                        help='Automaically adjust alpha (default: False)')
-    parser.add_argument('--seed', type=int, default=123456, metavar='N',
-                        help='random seed (default: 123456)')
-    parser.add_argument('--batch_size', type=int, default=256, metavar='N',
-                        help='batch size (default: 256)')
-    parser.add_argument('--num_steps', type=int, default=1000001, metavar='N',
-                        help='maximum number of steps (default: 1000000)')
-    parser.add_argument('--hidden_size', type=int, default=256, metavar='N',
-                        help='hidden size (default: 256)')
-    parser.add_argument('--updates_per_step', type=int, default=1, metavar='N',
-                        help='model updates per simulator step (default: 1)')
-    parser.add_argument('--start_steps', type=int, default=10000, metavar='N',
-                        help='Steps sampling random actions (default: 10000)')
-    parser.add_argument('--target_update_interval', type=int, default=1, metavar='N',
-                        help='Value target update per no. of updates per step (default: 1)')
-    parser.add_argument('--replay_size', type=int, default=1000000, metavar='N',
-                        help='size of replay buffer (default: 10000000)')
-    parser.add_argument('--cuda', action="store_true",
-                        help='run on CUDA (default: False)')
-    args = parser.parse_args()
+        
 
-    # Environment
-    # env = NormalizedActions(gym.make(args.env_name))
+    # Call the Pendulum Example
     env = gym.make( 'Pendulum-v1', g = 9.81 )
 
-    # Set the random seeds
-    state, _ = env.reset( seed = round( time.time( ) ) )
-    
+    # Set the random number seeds and get the Initial State
+    env.reset( seed = round( time.time( ) ) )
+
+    # Set the random number seeds for others
     env.action_space.seed( round( time.time( ) ) )
     torch.manual_seed(     round( time.time( ) ) )
     np.random.seed(        round( time.time( ) ) )
 
+    # Get the dimension of states and actions, and also the 
+    # [WARNING] This is for environments where we assume the mean of action is 0. 
+    n_state    = env.observation_space.shape[ 0 ] 
+    n_action   = env.action_space.shape[ 0 ]
+    max_action = float( env.action_space.high  )
 
-    # Agent
-    agent = SAC(env.observation_space.shape[0], env.action_space, args)
+    # Define the agent, noise and replay buffers
+    
+    agent = SAC_Agent( time.time( ), n_state, n_action )
 
-    #Tesnorboard
-    writer = SummaryWriter('runs/{}_SAC_{}_{}_{}'.format(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"), args.env_name,
-                                                                args.policy, "autotune" if args.automatic_entropy_tuning else ""))
+    parser = ArgumentParser()
+    parser.add_argument('--env', type=str, default='HalfCheetah-v2')
+    parser.add_argument('--seed', type=int, default=100)
+    parser.add_argument('--use_obs_filter', dest='obs_filter', action='store_true')
+    parser.add_argument('--update_every_n_steps', type=int, default=1)
+    parser.add_argument('--n_random_actions', type=int, default=10000)
+    parser.add_argument('--n_collect_steps', type=int, default=1000)
+    parser.add_argument('--n_evals', type=int, default=1)
+    parser.add_argument('--experiment_name', type=str, default='')
+    parser.add_argument('--make_gif', dest='make_gif', action='store_true')
+    parser.add_argument('--save_model', dest='save_model', action='store_true')
+    parser.add_argument('--total_steps', type=int, default=int(1e7))
+    parser.set_defaults(obs_filter=False)
+    parser.set_defaults(save_model=False)
 
-    # Memory
-    memory = ReplayMemory(args.replay_size, args.seed)
+    args = parser.parse_args()
+    params = vars(args)
 
-    # Training Loop
-    total_numsteps = 0
-    updates = 0
+    update_timestep = params['update_every_n_steps']
+    seed = params['seed']
+    log_interval = 1000
+    gif_interval = 500000
+    n_random_actions = params['n_random_actions']
+    n_evals = params['n_evals']
+    n_collect_steps = params['n_collect_steps']
+    use_statefilter = params['obs_filter']
+    save_model = params['save_model']
+    total_steps = params['total_steps']
 
-    for i_episode in itertools.count(1):
+
+    avg_length = 0
+    time_step = 0
+    cumulative_timestep = 0
+    cumulative_log_timestep = 0
+    n_updates = 0
+    i_episode = 0
+    log_episode = 0
+    samples_number = 0
+    episode_rewards = []
+    episode_steps = []
+
+    max_steps = env.spec.max_episode_steps
+
+    if use_statefilter:
+        state_filter = MeanStdevFilter(env.env.observation_space.shape[0])
+    else:
+        state_filter = None
+
+
+    while samples_number < total_steps:
+        time_step = 0
         episode_reward = 0
-        episode_steps = 0
+        i_episode += 1
+        log_episode += 1
+        state, _ = env.reset()
+        if state_filter:
+            state_filter.update(state)
         done = False
-        state = env.reset()
 
-        while not done:
-            if args.start_steps > total_numsteps:
-                action = env.action_space.sample()  # Sample random action
+        truncated = False
+
+        while (not done and not truncated ):
+            cumulative_log_timestep += 1
+            cumulative_timestep += 1
+            time_step += 1
+            samples_number += 1
+            if samples_number < n_random_actions:
+                action = env.action_space.sample()
             else:
-                action = agent.select_action(state)  # Sample action from policy
-
-            if len(memory) > args.batch_size:
-                # Number of updates per step in environment
-                for i in range(args.updates_per_step):
-                    # Update parameters of all the networks
-                    critic_1_loss, critic_2_loss, policy_loss, ent_loss, alpha = agent.update_parameters(memory, args.batch_size, updates)
-
-                    writer.add_scalar('loss/critic_1', critic_1_loss, updates)
-                    writer.add_scalar('loss/critic_2', critic_2_loss, updates)
-                    writer.add_scalar('loss/policy', policy_loss, updates)
-                    writer.add_scalar('loss/entropy_loss', ent_loss, updates)
-                    writer.add_scalar('entropy_temprature/alpha', alpha, updates)
-                    updates += 1
-
-            next_state, reward, done, _,  _ = env.step(action) # Step
-            episode_steps += 1
-            total_numsteps += 1
+                action = agent.get_action(state, state_filter=state_filter)
+            nextstate, reward, done, truncated, _ = env.step(action)
+            # if we hit the time-limit, it's not a 'real' done; we don't want to assign low value to those states
+            
+            real_done = False if time_step == max_steps else done
+            agent.replay_pool.push(Transition(state, action, reward, nextstate, real_done))
+            state = nextstate
+            if state_filter:
+                state_filter.update(state)
             episode_reward += reward
+            # update if it's time
+            if cumulative_timestep % update_timestep == 0 and cumulative_timestep > n_collect_steps:
+                q1_loss, q2_loss, pi_loss, a_loss = agent.optimize(update_timestep, state_filter=state_filter)
+                n_updates += 1
+            # logging
+            if cumulative_timestep % log_interval == 0 and cumulative_timestep > n_collect_steps:
 
-            # Ignore the "done" signal if it comes from hitting the time horizon.
-            # (https://github.com/openai/spinningup/blob/master/spinup/algos/sac/sac.py)
-            mask = 1 if episode_steps == env._max_episode_steps else float(not done)
+                avg_length = np.mean(episode_steps)
+                running_reward = np.mean(episode_rewards)
+                
+                eval_reward = evaluate_agent(env, agent, state_filter, n_starts=n_evals)
 
-            memory.push(state, action, reward, next_state, mask) # Append transition to memory
-
-            state = next_state
-
-        if total_numsteps > args.num_steps:
-            break
-
-        writer.add_scalar('reward/train', episode_reward, i_episode)
-        print("Episode: {}, total numsteps: {}, episode steps: {}, reward: {}".format(i_episode, total_numsteps, episode_steps, round(episode_reward, 2)))
-
-        if i_episode % 10 == 0 and args.eval is True:
-            avg_reward = 0.
-            episodes = 10
-            for _  in range(episodes):
-                state = env.reset()
-                episode_reward = 0
-                done = False
-                while not done:
-                    action = agent.select_action(state, evaluate=True)
-
-                    next_state, reward, done, _ = env.step(action)
-                    episode_reward += reward
+                print('Episode {} \t Samples {} \t Avg length: {} \t Test reward: {} \t Train reward: {} \t Number of Policy Updates: {}'.format(i_episode, samples_number, avg_length, eval_reward, running_reward, n_updates))
+                episode_steps = []
+                episode_rewards = []
 
 
-                    state = next_state
-                avg_reward += episode_reward
-            avg_reward /= episodes
-
-
-            writer.add_scalar('avg_reward/test', avg_reward, i_episode)
-
-            print("----------------------------------------")
-            print("Test Episodes: {}, Avg. Reward: {}".format(episodes, round(avg_reward, 2)))
-            print("----------------------------------------")
-
-    env.close()
+        episode_steps.append(time_step)
+        episode_rewards.append(episode_reward)

@@ -157,13 +157,12 @@ def replay( is_save_video ):
 if __name__ == "__main__":
 
 	
-	is_train_model = False
-	is_load_model = True
-
+	is_train_model = True
+	is_load_model = False
 	is_save_video = True
 
 	if is_train_model and not is_load_model: 
-		train( )
+		train(  )
 	
 	elif is_load_model and not is_train_model:
 		replay( is_save_video )

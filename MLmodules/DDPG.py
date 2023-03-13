@@ -8,77 +8,12 @@ import torch.nn.functional as F
 
 sys.path += [ "../MLmodules" ]
 
+from MLutils import Actor, Critic
+
 # Code from:
 # [REF] https://github.com/mosesnah-shared/machine-learning-tutorial/blob/main/notebooks/DDPG.ipynb
 device = torch.device( "cuda" if torch.cuda.is_available( ) else "cpu" )
 
-class Actor( nn.Module ):
-    """
-        Learning the a = mu(s) mapping, which is a deterministic function.
-    """
-    def __init__( self, n_state: int, n_action: int, n_hidden: int = 256, max_action: float = 1.0 ):
-
-        # Class inheritance. 
-        super( Actor, self ).__init__( )
-
-        # Save the maximum action value 
-        assert max_action >= 0
-        self.max_action = max_action
-
-        # The Layers of the Neural Network
-        self.l1 = nn.Linear(  n_state, n_hidden )
-        self.l2 = nn.Linear( n_hidden, n_hidden )
-        self.l3 = nn.Linear( n_hidden, n_action )
-        
-    def forward( self, state ):
-        
-        # Applying Rectified Linear Unit (ReLU) to x
-        x = F.relu( self.l1( state ) )
-
-        # Applying Rectified Linear Unit (ReLU) to x
-        x = F.relu( self.l2( x ) )
-
-        # Applying to tanh, which ranges the value from -1 to +1
-        x = torch.tanh( self.l3( x ) ) 
-
-        # Since the x value is from -1 to +1, we change the range to -max_action to +max_action.
-        return x * self.max_action
-
-class Critic( nn.Module ):
-    """
-        Learning the Q(s,a) function, which is the "Quality" function. Hence, input is a concatenation of state, action and the output is a scalar. 
-    """
-    def __init__( self, n_state, n_action, n_hidden = 256 ):
-
-        # Class inheritance. 
-        super( Critic, self ).__init__()
-
-        self.l1 = nn.Linear( n_state + n_action, n_hidden )
-        self.l2 = nn.Linear(           n_hidden, n_hidden )
-        self.l3 = nn.Linear(           n_hidden,        1 )
-
-    
-    def forward( self, state, action ):
-
-        # Concatenation of state and action vector.
-        # Note that the critic network update from batch of data 
-        # If batch size is N, then 
-        # state = N x n_s , action = N x n_a
-        # x = N x (n_s + n_a )
-        x = torch.cat( [ state, action ], dim = 1 )
-
-        # Applying Rectified Linear Unit (ReLU) to x
-        x = F.relu( self.l1( x ) )
-
-        # Applying Rectified Linear Unit (ReLU) to x
-        x = F.relu( self.l2( x ) )
-
-        # A simple Ax + b combination 
-        x = self.l3( x )
-
-        # The output is a N x 1 array. 
-        return x
-    
 class DDPG( object ):
 
     def __init__( self, n_state, n_action, max_action = 1., gamma = 0.99, tau = 0.005 ):
