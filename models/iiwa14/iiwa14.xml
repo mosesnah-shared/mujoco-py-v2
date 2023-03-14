@@ -11,6 +11,7 @@
         <motor ctrllimited="true" ctrlrange="-40.0 40.0" joint="iiwa14_joint_7" name="iiwa14_torq_j7"/>
     </actuator>
     <asset>
+        <texture type="skybox" builtin="flat" rgb1="1 1 1" rgb2="1 1 1" width="100" height="100" />
         <mesh name="iiwa14_link_0" file="meshes/link_0.stl" />
         <mesh name="iiwa14_link_1" file="meshes/link_1.stl" />
         <mesh name="iiwa14_link_2" file="meshes/link_2.stl" />

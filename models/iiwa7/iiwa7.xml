@@ -11,6 +11,7 @@
         <motor ctrllimited="true" ctrlrange="-40.0 40.0" joint="iiwa7_joint_7" name="iiwa7_torq_j7"/>
     </actuator>
     <asset>
+        <texture type="skybox" builtin="flat" rgb1="1 1 1" rgb2="1 1 1" width="100" height="100" />
         <mesh name="iiwa7_link_0" file="meshes/link_0.stl" />
         <mesh name="iiwa7_link_1" file="meshes/link_1.stl" />
         <mesh name="iiwa7_link_2" file="meshes/link_2.stl" />
@@ -36,11 +37,12 @@
                 <camera mode="fixed" name="iiwa7_robotview" pos="1.0 0 0.4" quat="0.653 0.271 0.271 0.653"/>
                 <inertial diaginertia="0 0 0" mass="0" pos="0 0 0"/>
                 <!-- mount attached here -->
-                <body name="pedestal" pos="0 0 0">
-                    <inertial diaginertia="6.0869 5.81635 4.20915" mass="60.864" pos="0 0 0" quat="0.659267 -0.259505 -0.260945 0.655692"/>
-                    <geom conaffinity="0" contype="0" group="1" mesh="pedestal" pos="0.26 0.345 -0.91488" quat="0.5 0.5 -0.5 -0.5" rgba="0.2 0.2 0.2 1" type="mesh" name="pedestal_col1"/>
+                <!-- Uncomment this if you want to take out the mount -->
+                <!-- <body name="pedestal" pos="0 0 0"> -->
+                    <!-- <inertial diaginertia="6.0869 5.81635 4.20915" mass="60.864" pos="0 0 0" quat="0.659267 -0.259505 -0.260945 0.655692"/> -->
+                    <!-- <geom conaffinity="0" contype="0" group="1" mesh="pedestal" pos="0.26 0.345 -0.91488" quat="0.5 0.5 -0.5 -0.5" rgba="0.2 0.2 0.2 1" type="mesh" name="pedestal_col1"/> -->
                     <!-- <geom pos="-0.02 0 -0.29" rgba="0.2 0.2 0.2 1" size="0.18 0.31" type="cylinder" name="pedestal_col2"/> -->
-                </body>
+                <!-- </body> -->
             </body>
             <geom type="mesh" pos="0 0 0" contype="0" conaffinity="0" group="1" rgba="0.4 0.4 0.4 1" name="iiwa7_link_0_visual" mesh="iiwa7_link_0_vis" />
             <geom type="mesh" pos="0 0 0" rgba="0.4 0.4 0.4 1" contype="0" mesh="iiwa7_link_0" name="iiwa7_link_0_collision" />

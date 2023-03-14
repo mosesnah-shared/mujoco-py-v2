@@ -10,6 +10,7 @@
         <motor ctrllimited="true" ctrlrange="-28.0 28.0" joint="ur5e_wrist_3_joint" name="ur5e_torq_j6"/>
     </actuator>
     <asset>
+        <texture type="skybox" builtin="flat" rgb1="1 1 1" rgb2="1 1 1" width="100" height="100" />    
         <mesh name="ur5e_base" file="meshes/base.stl" />
         <mesh name="ur5e_shoulder" file="meshes/shoulder.stl" />
         <mesh name="ur5e_upperarm" file="meshes/upperarm.stl" />

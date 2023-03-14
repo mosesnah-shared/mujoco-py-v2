@@ -15,7 +15,9 @@ device = torch.device( "cuda" if torch.cuda.is_available( ) else "cpu" )
 # [REF] https://github.com/nikhilbarhate99/PPO-PyTorch
 # Note that we only use this code for continuous action space.
 
-################################## PPO Policy ##################################
+# Compared to the DDPG and TD3 buffers, 
+# This buffer DO NOT include the next-state of the trajectory, and
+# DO include the V(state) function's value (state_values) and logprobs which is simply log( pi( . | s ) )
 class RolloutBuffer:
     def __init__( self ):
         self.actions      = [ ]
@@ -34,12 +36,14 @@ class RolloutBuffer:
         del self.is_terminals[ : ]
 
 
-class ActorCritic(nn.Module):
-    def __init__(self, state_dim, action_dim, action_std_init):
-        super(ActorCritic, self).__init__()
+class ActorCritic( nn.Module ):
+    def __init__( self, state_dim, action_dim, action_std_init ):
+        super( ActorCritic, self).__init__( )
 
         self.action_dim = action_dim
-        self.action_var = torch.full((action_dim,), action_std_init * action_std_init).to(device)
+
+        # The array of action variance, 
+        self.action_var = torch.full( (action_dim,), action_std_init * action_std_init).to(device)
         
         # Actor Network
         self.actor = nn.Sequential(
@@ -61,6 +65,7 @@ class ActorCritic(nn.Module):
     def set_action_std( self, new_action_std ):
         self.action_var = torch.full( ( self.action_dim, ), new_action_std * new_action_std ).to( device )
     
+    # The actor maps state input to the mean of the Multivariate Gaussian 
     def act( self, state ):
 
         action_mean = self.actor( state )
@@ -76,14 +81,14 @@ class ActorCritic(nn.Module):
     def evaluate( self, state, action ):
 
         action_mean = self.actor( state )
-        
         action_var = self.action_var.expand_as( action_mean )
+
         cov_mat = torch.diag_embed( action_var ).to( device )
         dist = MultivariateNormal( action_mean, cov_mat )
         
         # For Single Action Environments.
         if self.action_dim == 1:
-            action = action.reshape(-1, self.action_dim)
+            action = action.reshape( -1, self.action_dim )
 
         action_logprobs = dist.log_prob( action )
         dist_entropy    = dist.entropy( )
@@ -95,6 +100,7 @@ class ActorCritic(nn.Module):
 class PPO:
     def __init__( self, state_dim, action_dim, lr_actor, lr_critic, gamma, K_epochs, eps_clip, action_std_init = 0.6 ):
 
+        #
         self.action_std = action_std_init
 
         self.gamma    = gamma
@@ -104,7 +110,7 @@ class PPO:
         self.buffer = RolloutBuffer()
 
         self.policy = ActorCritic( state_dim, action_dim, action_std_init ).to( device )
-        self.optimizer = torch.optim.Adam( [  {'params': self.policy.actor.parameters(  ), 'lr': lr_actor  },
+        self.optimizer = torch.optim.Adam( [  {'params':  self.policy.actor.parameters( ), 'lr': lr_actor  },
                                               {'params': self.policy.critic.parameters( ), 'lr': lr_critic } ] )
 
         self.policy_old = ActorCritic( state_dim, action_dim, action_std_init ).to( device )
@@ -120,27 +126,32 @@ class PPO:
         
     def decay_action_std( self, action_std_decay_rate, min_action_std ):
 
-        self.action_std =- action_std_decay_rate
+        self.action_std = self.action_std - action_std_decay_rate
         self.action_std = round( self.action_std, 4 )
+
         if (self.action_std <= min_action_std):
             self.action_std = min_action_std
             print("setting actor output action_std to min_action_std : ", self.action_std)
+
         else:
             print("setting actor output action_std to : ", self.action_std)
             
-        self.set_action_std(self.action_std)
-
+        self.set_action_std( self.action_std )
 
     def select_action(self, state):
             
         with torch.no_grad():
-            state = torch.FloatTensor(state).to(device)
-            action, action_logprob, state_val = self.policy_old.act(state)
+            state = torch.FloatTensor( state ).to( device )
 
+            # The policy network maps to the "mean" of the Gaussian Distribution.
+            # It samples from the action, 
+            action, action_logprob, state_val = self.policy_old.act( state )
+
+        #
         self.buffer.states.append(state)
         self.buffer.actions.append(action)
-        self.buffer.logprobs.append(action_logprob)
-        self.buffer.state_values.append(state_val)
+        self.buffer.logprobs.append( action_logprob )
+        self.buffer.state_values.append( state_val )
 
         return action.detach().cpu().numpy().flatten()
         
@@ -157,9 +168,10 @@ class PPO:
 
             discounted_reward = reward + (self.gamma * discounted_reward)
             rewards.insert( 0, discounted_reward )
-            
+
+
         # Normalizing the rewards
-        rewards = torch.tensor( rewards, dtype = torch.float32).to( device )
+        rewards = torch.tensor( rewards, dtype = torch.float32 ).to( device )
         rewards = ( rewards - rewards.mean( ) ) / ( rewards.std( ) + 1e-7 )
 
         # convert list to tensor
@@ -185,13 +197,19 @@ class PPO:
 
             # Finding Surrogate Loss  
             surr1 = ratios * advantages
-            surr2 = torch.clamp( ratios, 1-self.eps_clip, 1+self.eps_clip) * advantages
+            surr2 = torch.clamp( ratios, 1 - self.eps_clip, 1 + self.eps_clip ) * advantages
 
             # final loss of clipped objective PPO
             # This also includes the entropy for the cost function
+            # Minus sign since we are originally doing gradient ascent, should flipt
+            # This is optimizing the function at the same time:
+            # loss_PPOobj = -torch.min( surr1, surr2 )
+            # loss_val = 0.5 * self.MseLoss( state_values, rewards ) #- 0.01 * dist_entropy
+            # loss_PPOobj.mean( ).backward( )
+            # loss_val.backward( )
+
             loss = -torch.min( surr1, surr2 ) + 0.5 * self.MseLoss( state_values, rewards ) - 0.01 * dist_entropy
-            
-            # take gradient step
+
             self.optimizer.zero_grad( )
             loss.mean( ).backward( )
             self.optimizer.step( )
@@ -220,8 +238,10 @@ def train():
 
     ####### initialize environment hyperparameters ######
     env_name = "Pendulum-v1"
+    env = gym.make( env_name, g = 9.81 )
 
-    max_ep_len = 1000                     # max timesteps in one episode
+    # max_ep_len = env._max_episode_steps   # max timesteps in one episode, which is defined for each environment
+    max_ep_len = 1000
     max_training_timesteps = int( 3e6 )   # break training loop if timeteps > max_training_timesteps
 
     print_freq = max_ep_len * 10          # print avg reward in the interval (in num timesteps)
@@ -231,13 +251,13 @@ def train():
     action_std = 0.6                      # starting std for action distribution (Multivariate Normal)
     action_std_decay_rate = 0.05          # linearly decay action_std (action_std = action_std - action_std_decay_rate)
     min_action_std = 0.1                  # minimum action_std (stop decay after action_std <= min_action_std)
-    action_std_decay_freq = int(2.5e5)    # action_std decay frequency (in num timesteps)
+    action_std_decay_freq = int( 2.5e5 )  # action_std decay frequency (in num timesteps)
     #####################################################
 
     ## Note : print/log frequencies should be > than max_ep_len
 
     ################ PPO hyperparameters ################
-    update_timestep = max_ep_len * 4      # update policy every n timesteps
+    update_timestep = max_ep_len * 4.0    # update policy every n timesteps
     K_epochs = 80                         # update policy for K epochs in one PPO update
 
     eps_clip = 0.2                        # clip parameter for PPO
@@ -248,10 +268,6 @@ def train():
 
     random_seed = 1                       # set random seed if required (0 = no random seed)
     #####################################################
-
-    # print("training environment name : " + env_name)
-
-    env = gym.make( 'Pendulum-v1', g = 9.81 )
 
     # state space dimension
     state_dim = env.observation_space.shape[ 0 ]
@@ -341,7 +357,7 @@ def train():
     ################# training procedure ################
 
     # initialize a PPO agent
-    ppo_agent = PPO(state_dim, action_dim, lr_actor, lr_critic, gamma, K_epochs, eps_clip, action_std )
+    ppo_agent = PPO( state_dim, action_dim, lr_actor, lr_critic, gamma, K_epochs, eps_clip, action_std )
 
     # track total training time
     start_time = datetime.now().replace( microsecond=0 )
@@ -363,32 +379,36 @@ def train():
     time_step = 0
     i_episode = 0
 
-    # training loop
+    # The Total training Loop 
     while time_step <= max_training_timesteps:
 
         state, _ = env.reset( seed = random_seed )
         current_ep_reward = 0
 
-        for t in range( 1, max_ep_len+1 ):
+        # A Single trial of simulation 
+        for _ in range( 1, max_ep_len+1 ):
 
-            # select action with policy
+            # Select action with policy
+            # Note that the state and action are appended in the buffer here.
             action = ppo_agent.select_action( state )
             state, reward, done, truncated, _ = env.step( action )
 
-            # saving reward and is_terminals
-            ppo_agent.buffer.rewards.append( reward )
-            ppo_agent.buffer.is_terminals.append(done)
+            # if done or truncated: done = True 
 
-            time_step +=1
+            # Saving Reward and is_terminals
+            ppo_agent.buffer.rewards.append( reward )
+            ppo_agent.buffer.is_terminals.append( done )
+
+            time_step += 1
             current_ep_reward += reward
 
-            # update PPO agent
+            # Update PPO agent + Clear Buffer
             if time_step % update_timestep == 0:
-                ppo_agent.update()
+                ppo_agent.update( )
 
-            # if continuous action space; then decay action std of ouput action distribution
+            # If Continuous action space; then decay action std of ouput action distribution
             if time_step % action_std_decay_freq == 0:
-                ppo_agent.decay_action_std(action_std_decay_rate, min_action_std)
+                ppo_agent.decay_action_std( action_std_decay_rate, min_action_std )
 
             # log in logging file
             if time_step % log_freq == 0:
@@ -403,19 +423,19 @@ def train():
                 log_running_reward = 0
                 log_running_episodes = 0
 
-            # printing average reward
+            # Printing Average Reward
             if time_step % print_freq == 0:
 
                 # print average reward till last episode
                 print_avg_reward = print_running_reward / print_running_episodes
                 print_avg_reward = round( print_avg_reward, 2 )
 
-                print("Episode : {} \t\t Timestep : {} \t\t Average Reward : { }".format( i_episode, time_step, print_avg_reward ) )
+                print("Episode : {} \t\t Timestep : {} \t\t Average Reward : {}".format( i_episode, time_step, print_avg_reward ) )
 
                 print_running_reward = 0
                 print_running_episodes = 0
 
-            # save model weights
+            # Save model weights
             if time_step % save_model_freq == 0:
                 print("--------------------------------------------------------------------------------------------")
                 print("saving model at : " + checkpoint_path )
@@ -425,15 +445,13 @@ def train():
                 print("--------------------------------------------------------------------------------------------")
 
             # break; if the episode is over
-            if done or truncated:
+            if done:
                 break
 
-        print( t )
-
-        print_running_reward += current_ep_reward
+        print_running_reward   += current_ep_reward
         print_running_episodes += 1
 
-        log_running_reward += current_ep_reward
+        log_running_reward   += current_ep_reward
         log_running_episodes += 1
 
         i_episode += 1

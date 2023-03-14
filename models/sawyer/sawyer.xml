@@ -9,6 +9,7 @@
     	<motor ctrllimited="true" ctrlrange="-9.0 9.0" joint="sawyer_joint_7" name="sawyer_torq_j7"/>
     </actuator>
     <asset>
+        <texture type="skybox" builtin="flat" rgb1="1 1 1" rgb2="1 1 1" width="100" height="100" />
     	<mesh file="meshes/base.stl" name="sawyer_base"/>
     	<mesh file="meshes/l0.stl" name="sawyer_l0"/>
     	<mesh file="meshes/head.stl" name="sawyer_head"/>

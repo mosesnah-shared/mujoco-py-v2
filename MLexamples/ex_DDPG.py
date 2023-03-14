@@ -58,7 +58,7 @@ def train( n_epi = 400 ):
 		
 		# For pendulum v1 gym, a single simulation is maximum 500-steps long. 
 		# [REF] https://gymnasium.farama.org/environments/classic_control/cart_pole/
-		for step in range( 500 ):
+		for step in range( env._max_episode_steps ):
 
 			# Get the action value from the deterministic policy Actor network.
 			action = agent.get_action( state )
@@ -73,6 +73,8 @@ def train( n_epi = 400 ):
 
 			# Run a single step of simulation
 			new_state, reward, done, truncated, _ = env.step( action )  
+
+			done = True if done or truncated else False
 
 			# Add this to our replay buffer, note that push simply generates the tuple and add 
 			replay_buffer.add( state, action, reward, new_state, done )

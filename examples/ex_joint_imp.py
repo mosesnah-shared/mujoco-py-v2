@@ -9,7 +9,9 @@ from basic_control import gravity_compensator
 from utils         import min_jerk_traj
 
 # Call the xml model file + data for MuJoCo
-model = mujoco.MjModel.from_xml_path( '../models/double_pendulum.xml' )
+dir_name   = '../models/my_robots/'
+robot_name = 'double_pendulum.xml'
+model = mujoco.MjModel.from_xml_path( dir_name + robot_name )
 data  = mujoco.MjData( model )
 
 # Create the viewer object

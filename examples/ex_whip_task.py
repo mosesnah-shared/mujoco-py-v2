@@ -10,7 +10,9 @@ from basic_control import gravity_compensator
 from utils         import min_jerk_traj
 
 # Call the model + data for MuJoco
-model = mujoco.MjModel.from_xml_path( '../models/whip_N10.xml' )
+dir_name   = '../models/my_robots/'
+robot_name = 'whip_N10.xml'
+model = mujoco.MjModel.from_xml_path( dir_name + robot_name )
 data  = mujoco.MjData( model )
 
 # create the viewer object

@@ -13,6 +13,7 @@
        <joint damping=".1"/>
     </default>
     <asset>
+        <texture type="skybox" builtin="flat" rgb1="1 1 1" rgb2="1 1 1" width="100" height="100" />
         <mesh name="panda_link_0" file="meshes/link0_vis.stl" />
         <mesh name="panda_link_1" file="meshes/link1_vis.stl" />
         <mesh name="panda_link_2" file="meshes/link2_vis.stl" />
