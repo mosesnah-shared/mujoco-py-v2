@@ -120,7 +120,7 @@ def replay( is_save_video ):
 	n_action   = env.action_space.shape[ 0 ]
 	max_action = float( env.action_space.high  )
 
-	model_path = "../models/DDPG/DDPG"
+	model_path = "../MLmodels/DDPG/DDPG"
 	agent      = DDPG( n_state, n_action, max_action )
 	agent.load( model_path )
 
