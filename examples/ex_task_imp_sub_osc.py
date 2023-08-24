@@ -8,7 +8,7 @@ import mujoco_viewer
 
 sys.path += [ "../controllers", "../modules" ]
 
-from utils         import min_jerk_traj
+from utils   import min_jerk_traj
 
 # Call the xml model file + data for MuJoCo
 dir_name   = '../models/my_robots/'
@@ -23,13 +23,13 @@ viewer = mujoco_viewer.MujocoViewer( model, data, hide_menus = True )
 np.set_printoptions( precision = 4, threshold = 9, suppress = True )
 
 # Parameters for the simulation
-T        = 8.                       # Total Simulation Time
+T        = 16.                      # Total Simulation Time
 dt       = model.opt.timestep       # Time-step for the simulation (set in xml file)
 fps      = 30                       # Frames per second
 n_frames = 0                        # The current frame of the simulation
 speed    = 1.0                      # The speed of the simulator
 t_update = 1./fps * speed           # Time for update 
-is_save  = False
+is_save  = True
 
 # The time-step defined in the xml file should be smaller than update
 assert( dt <= t_update )
@@ -49,14 +49,10 @@ id_ee = model.site( "site_end_effector" ).id
 p_init = np.copy( data.site_xpos[ id_ee ] )
 
 # The parameters of the minimum-jerk trajectory.
-t0  = 1.0
-D1  = 2.0
-t02 = t0 + 0.5 * D1
-D2  = 1.5
-pi   = p_init
-
-del_pf  = np.array( [ -0.7, 0.4, 0.0 ] )
-del_pf2 = np.array( [  1.0, 0.5, 0.0 ] )
+t0 = 5.0
+D  = 4
+pi = p_init
+pf = np.array( [  0.0, 1.0, 0.0 ] )
 
 # Save the references for the q and dq 
 q  = data.qpos[ 0:model.nq ]
@@ -84,17 +80,18 @@ while data.time <= T:
 
     # Torque 1: First-order Task-space Impedance Controller
     # Calculate the minimum-jerk trajectory 
-    p0  = np.zeros( 3 )
+    # p0  = np.zeros( 3 )
+    p0  = np.copy( p_init )
     dp0 = np.zeros( 3 )
 
-    for i in range( 3 ):
-        p0[ i ], dp0[ i ], _ = min_jerk_traj( data.time, t0 , t0  + D1, pi[ i ], pi[ i ] +  del_pf[ i ], D1 )
-        tmp1, tmp2, _        = min_jerk_traj( data.time, t02, t02 + D2,       0,           del_pf2[ i ], D2 )
+    # for i in range( 3 ):
+    #     p0[ i ], dp0[ i ], _ = min_jerk_traj( data.time, t0 , t0  + D, pi[ i ], pi[ i ] +  pf[ i ], D )
 
-        p0[ i ]  += tmp1
-        dp0[ i ] += tmp2
+    p0[  0 ] += 0.2 * np.sin( np.pi * data.time )
+    dp0[ 0 ]  = 0.2 * np.pi * np.cos( np.pi * data.time )
 
 
+    # print( p0, np.sin( np.pi * data.time ) )
     # Get the Jacobian Matrix
     mujoco.mj_jacSite( model, data, Jp, Jr, id_ee )
 
