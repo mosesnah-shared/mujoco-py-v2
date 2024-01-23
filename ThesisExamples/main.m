@@ -124,7 +124,7 @@ ylabel( '$Y$ (m)', 'fontsize', 35 )
 
 fig_save( f, './images/sec512_task' )
 
-%% (1B) Section 5.1.3: Task-discrete Movement w/o Redund, Singularity
+%% (1C) Section 5.1.2: Task-discrete Movement w/o Redund, Singularity
 
 data = load( './data/sec512_task_sing.mat' );
 t_arr = data.t_arr;
@@ -182,3 +182,9 @@ xlabel( '$X$ (m)' , 'fontsize', 35 )
 ylabel( '$Y$ (m)', 'fontsize', 35 )
 
 fig_save( f, './images/sec512_task_sing' )
+
+%% (1C) Section 5.1.3: Task-discrete Position w Redund, Singularity
+data = load( './data/sec513_task_sing.mat' );
+
+
+fig_save( f, './images/sec513_task_redund' )
