@@ -10,7 +10,7 @@ from scipy.io import savemat
 
 # Call the xml model file + data for MuJoCo
 dir_name   = './models/my_robots/'
-robot_name = '2DOF_planar_torque.xml'
+robot_name = '5DOF_planar_torque.xml'
 model = mujoco.MjModel.from_xml_path( dir_name + robot_name )
 data  = mujoco.MjData( model )
 
@@ -21,10 +21,10 @@ viewer = mujoco_viewer.MujocoViewer( model, data, hide_menus = True )
 np.set_printoptions( precision = 4, threshold = 9, suppress = True )
 
 # Parameters for the simulation
-T        = 6.                       # Total Simulation Time
+T        = 8.                       # Total Simulation Time
 dt       = model.opt.timestep       # Time-step for the simulation (set in xml file)
 fps      = 30                       # Frames per second
-save_ps  = 1000                     # Saving point per second
+save_ps  = 100                      # Saving point per second
 n_frames = 0                        # The current frame of the simulation
 n_saves  = 0                        # Update for the saving point
 speed    = 1.0                      # The speed of the simulator
@@ -38,14 +38,13 @@ assert( dt <= t_update and dt <= t_save )
 # The number of degrees of freedom
 nq = model.nq
 
-q1 = np.pi * 1/12
-q_init = np.array( [ q1, np.pi-2*q1 ] )
+q_init = np.array( [ 0, np.pi/2, 0, 0, np.pi/2 ])
 data.qpos[ 0:nq ] = q_init
 mujoco.mj_forward( model, data )
 
 # The impedances of the robot 
-Kp = 60 * np.eye( 3 )
-Bp = 20 * np.eye( 3 )
+Kp = 300 * np.eye( 3 )
+Bp = 100 * np.eye( 3 )
 
 # Save the references for the q and dq 
 q  = data.qpos[ 0:nq ]
@@ -67,9 +66,9 @@ dp = Jp @ dq
 # Get the initial position of the robot's end-effector
 # and also the other parameters
 pi = np.copy( p )
-pf = pi + np.array( [ 0.0, 2.0-pi[ 1 ], 0.0 ] )
-t0 = 0.3
-D  = 1.0
+pf = pi + np.array( [ 3, 0.0, 0.0 ] )
+t0 = 2.0
+D  = 2.0
 
 # Flags
 is_save = True
@@ -83,13 +82,10 @@ p0_mat  = [ ]
 dq_mat  = [ ] 
 dp_mat  = [ ] 
 dp0_mat = [ ] 
-Jp_mat  = [ ]
 
-# Stable joint posture 
-q0 = np.array( [ 0.9 *np.pi, -0.8*np.pi ] )
+Bq = 30 * np.eye( model.nq )
 
-kq = 30 
-bq = 3
+
 while data.time <= T:
 
     mujoco.mj_step( model, data )
@@ -100,17 +96,11 @@ while data.time <= T:
 
     dp = Jp @ dq
 
-    tau_imp = Jp.T @ ( Kp @ ( p0 - p ) + Bp @ ( dp0 - dp ) )
-
-    # If singularity management is on
-    if q[ 1 ] <= -0.1:
-        tau_sing = kq * ( q0 - q ) - bq * dq
-    else:
-        tau_sing = np.zeros( model.nq )
-
+    tau_imp1 = Jp.T @ ( Kp @ ( p0 - p ) + Bp @ ( dp0 - dp ) )
+    tau_imp2 =  -Bq @ dq
 
     # Adding the Torque
-    data.ctrl[ : ] = tau_imp + tau_sing
+    data.ctrl[ : ] = tau_imp1 + tau_imp2
 
     # Update Visualization
     if ( ( n_frames != ( data.time // t_update ) ) and is_view ):
@@ -129,13 +119,11 @@ while data.time <= T:
         p0_mat.append(  np.copy( p0  ) )    
         dp_mat.append(  np.copy( dp  ) )
         dp0_mat.append( np.copy( dp0 ) )    
-        Jp_mat.append(  np.copy(  Jp ) )
 
 # Saving the data
 if is_save:
-    data_dic = { "t_arr": t_mat, "q_arr": q_mat, "p_arr": p_mat, "dp_arr": dp_mat,
-                 "p0_arr": p0_mat, "dq_arr": dq_mat, "dp0_arr": dp0_mat, "Kp": Kp, "Bq": Bp, "q0": q0, "Jp_arr": Jp_mat, "Kq": kq, "Bq": bq }
-    savemat( "./ThesisExamples/data/sec512_task_sing.mat", data_dic )
+    data_dic = { "t_arr": t_mat, "q_arr": q_mat, "p_arr": p_mat, "dp_arr": dp_mat, "p0_arr": p0_mat, "dq_arr": dq_mat, "dp0_arr": dp0_mat, "Kp": Kp, "Bq": Bp }
+    savemat( "./ThesisExamples/data/sec513_task_redunt.mat", data_dic )
 
 if is_view:            
     viewer.close()
