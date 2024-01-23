@@ -80,7 +80,7 @@ while data.time <= T:
     dq0 = np.zeros( model.nu )
 
     for i in range( model.nu ):
-        q0[ i ], dq0[ i ], _ = min_jerk_traj( data.time, t0, t0 + D, q0i[ i ], q0f[ i ], D )
+        q0[ i ], dq0[ i ], _ = min_jerk_traj( data.time, t0, t0 + D, q0i[ i ], q0f[ i ] )
 
     tau_imp = Kq @ ( q0 - q ) + Bq @ ( dq0 - dq )
     
