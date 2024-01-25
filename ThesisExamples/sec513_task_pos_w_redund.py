@@ -21,7 +21,7 @@ viewer = mujoco_viewer.MujocoViewer( model, data, hide_menus = True )
 np.set_printoptions( precision = 4, threshold = 9, suppress = True )
 
 # Parameters for the simulation
-T        = 8.                       # Total Simulation Time
+T        = 6.                       # Total Simulation Time
 dt       = model.opt.timestep       # Time-step for the simulation (set in xml file)
 fps      = 30                       # Frames per second
 save_ps  = 100                      # Saving point per second
@@ -67,7 +67,7 @@ dp = Jp @ dq
 # and also the other parameters
 pi = np.copy( p )
 pf = pi + np.array( [ 3, 0.0, 0.0 ] )
-t0 = 2.0
+t0 = 0.3
 D  = 2.0
 
 # Flags
