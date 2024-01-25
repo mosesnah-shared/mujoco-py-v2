@@ -6,11 +6,14 @@ import mujoco_viewer
 sys.path += [ "controllers", "utils" ]
 
 from utils    import min_jerk_traj
+from geom_funcs import rotx, roty, rotz, geodesicSO3
 from scipy.io import savemat
+from scipy.spatial.transform import Rotation
+
 
 # Call the xml model file + data for MuJoCo
-dir_name   = './models/my_robots/'
-robot_name = '5DOF_planar_torque.xml'
+dir_name   = './models/iiwa14/'
+robot_name = 'iiwa14.xml'
 model = mujoco.MjModel.from_xml_path( dir_name + robot_name )
 data  = mujoco.MjData( model )
 
@@ -38,13 +41,18 @@ assert( dt <= t_update and dt <= t_save )
 # The number of degrees of freedom
 nq = model.nq
 
-q_init = np.array( [ 0, np.pi/2, 0, 0, np.pi/2 ])
+q_init = np.array( [-0.5000, 0.8236,0,-1.0472,0.8000, 1.5708, 0 ] )
 data.qpos[ 0:nq ] = q_init
 mujoco.mj_forward( model, data )
 
 # The impedances of the robot 
-Kp = 300 * np.eye( 3 )
-Bp = 100 * np.eye( 3 )
+Kp = 1600 * np.eye( 3 )
+Bp =  800 * np.eye( 3 )
+
+Bq = 20 * np.eye( model.nq )
+
+kr = 80 
+br =  8
 
 # Save the references for the q and dq 
 q  = data.qpos[ 0:nq ]
@@ -55,20 +63,27 @@ EE_site = "site_end_effector"
 id_EE = model.site( EE_site ).id
 
 # Saving the references 
-p  = data.site_xpos[ id_EE ]
+p   = data.site_xpos[ id_EE ]
+Rsb = data.site_xmat[ id_EE ]
+
 Jp = np.zeros( ( 3, model.nq ) )
 Jr = np.zeros( ( 3, model.nq ) )
 
 mujoco.mj_jacSite( model, data, Jp, Jr, id_EE )
 
 dp = Jp @ dq
+w  = Jr @ dq
 
 # Get the initial position of the robot's end-effector
 # and also the other parameters
 pi = np.copy( p )
-pf = pi + np.array( [ 3, 0.0, 0.0 ] )
+pf = pi - 2 * np.array( [0.0, pi[ 1 ], 0.0])
 t0 = 2.0
 D  = 2.0
+
+ang = 80 
+Rinit = np.copy( Rsb ).reshape( 3, -1 )
+Rgoal = Rinit @ rotx( ang*np.pi/180 ) 
 
 # Flags
 is_save = True
@@ -83,8 +98,6 @@ dq_mat  = [ ]
 dp_mat  = [ ] 
 dp0_mat = [ ] 
 
-Bq = 30 * np.eye( model.nq )
-
 
 while data.time <= T:
 
@@ -97,10 +110,18 @@ while data.time <= T:
     dp = Jp @ dq
 
     tau_imp1 = Jp.T @ ( Kp @ ( p0 - p ) + Bp @ ( dp0 - dp ) )
-    tau_imp2 =  -Bq @ dq
+
+    # For orientation
+    Rcurr = np.copy( Rsb ).reshape( 3, -1 )
+
+    R0 = geodesicSO3( Rinit, Rgoal, t0, D, data.time )
+
+    tmp1 = Rotation.from_matrix( Rcurr.T @ R0 )
+    tau_imp2 = Jr.T @ ( kr * Rcurr @ tmp1.as_rotvec( ) - br * Jr @ dq )
+    tau_imp3 =  -Bq @ dq
 
     # Adding the Torque
-    data.ctrl[ : ] = tau_imp1 + tau_imp2
+    data.ctrl[ : ] = tau_imp1 + tau_imp2 + tau_imp3
 
     # Update Visualization
     if ( ( n_frames != ( data.time // t_update ) ) and is_view ):
@@ -122,7 +143,8 @@ while data.time <= T:
 
 # Saving the data
 if is_save:
-    data_dic = { "t_arr": t_mat, "q_arr": q_mat, "p_arr": p_mat, "dp_arr": dp_mat, "p0_arr": p0_mat, "dq_arr": dq_mat, "dp0_arr": dp0_mat, "Kp": Kp, "Bq": Bp }
+    data_dic = { "t_arr": t_mat, "q_arr": q_mat, "p_arr": p_mat, 
+                "dp_arr": dp_mat, "p0_arr": p0_mat, "dq_arr": dq_mat, "dp0_arr": dp0_mat, "Kp": Kp, "Bq": Bp }
     savemat( "./ThesisExamples/data/sec514_task_pos_orient_redunt.mat", data_dic )
 
 if is_view:            
