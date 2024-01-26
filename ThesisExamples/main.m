@@ -320,7 +320,10 @@ plot3( a, data.p_arr(  :, 1 ), data.p_arr(  :, 2 ), data.p_arr(  :, 3 ), 'linewi
 % Update transformation 
 view( [ 90, 0 ] )
 axis equal
-set( a, 'visible', 'off', 'xlim', [-0.2794,0.9169], 'ylim', [-0.4136,0.5], 'zlim', [-0.0270,0.6121] )
+set( a, 'xlim', [-0.2794,0.9169], 'ylim', [-0.44,0.42], 'zlim', [0,0.6121] ) 
+set( a, 'xticklabel', {}, 'yticklabel', {},'zticklabel', {} ,'visible', 'off')
+fig_save( f, './images/sec514_task_pos_orient_type1_plot1' )
+
 
 %% (1F) Section 5.1.4: Task-discrete Position and orientation w Redund, Type 1, Plot 2
 
@@ -330,10 +333,10 @@ data = load( './data/sec514_task_pos_orient_redunt1.mat' );
 f = figure( ); a = axes( 'parent', f );
 hold on
 plot3( a, data.p0_arr( :, 1 ), data.p0_arr( :, 2 ), data.p0_arr( :, 3 ), 'linewidth', 10, 'color', 'k', 'linestyle', ':' )
-plot3( a, data.p_arr(  :, 1 ), data.p_arr(  :, 2 ), data.p_arr(  :, 3 ), 'linewidth', 5, 'linestyle', '-', 'color', [0.8500 0.3250 0.0980] )
+plot3( a, data.p_arr(  :, 1 ), data.p_arr(  :, 2 ), data.p_arr(  :, 3 ), 'linewidth', 5, 'linestyle', '-', 'color', c_blue )
 axis equal
 
-set( a, 'visible', 'off' )
+set( a, 'xticklabel', {}, 'yticklabel', {}, 'zticklabel', {} )
 view( [90, 0 ])
 
 Np = length( data.t_arr );
@@ -361,7 +364,7 @@ for i = 1: length( time_arr )
     r3 = scl * R_tmp( :, 3 );
     
     
-    scatter3( a, x, y, z, 500, 'filled', 'markerfacecolor', 'w', 'markeredgecolor', [0.8500 0.3250 0.0980], 'linewidth', 5 )
+    scatter3( a, x, y, z, 500, 'filled', 'markerfacecolor', 'w', 'markeredgecolor', c_blue, 'linewidth', 5 )
     quiver3( a, x, y, z, r1( 1 ), r1( 2 ), r1( 3 ), 'linewidth', 12, 'color', 'r' )
     quiver3( a, x, y, z, r2( 1 ), r2( 2 ), r2( 3 ), 'linewidth', 12, 'color', 'g' )
     quiver3( a, x, y, z, r3( 1 ), r3( 2 ), r3( 3 ), 'linewidth', 12, 'color', 'b' )
@@ -387,7 +390,7 @@ p0_end = data.p0_arr( end, : );
 x =0.1+ p0_end( 1 );
 y = p0_end( 2 );
 z = p0_end( 3 );
-scatter3( a, x, y, z, 500, 'filled', 'markerfacecolor', 'w', 'markeredgecolor', [0.8500 0.3250 0.0980], 'linewidth', 5 )
+scatter3( a, x, y, z, 500, 'filled', 'markerfacecolor', 'w', 'markeredgecolor', c_blue, 'linewidth', 5 )
 
 quiver3( a, x, y, z, r1( 1 ), r1( 2 ), r1( 3 ), 'linewidth', 8, 'color', 'r' )
 quiver3( a, x, y, z, r2( 1 ), r2( 2 ), r2( 3 ), 'linewidth', 8, 'color', 'g' )
@@ -396,6 +399,13 @@ quiver3( a, x, y, z, r3( 1 ), r3( 2 ), r3( 3 ), 'linewidth', 8, 'color', 'b' )
 quiver3( a, x, y, z, r1( 1 ), r1( 2 ), r1( 3 ), 'linewidth', 4, 'color', [ 0.1,0.1,0.1] )
 quiver3( a, x, y, z, r2( 1 ), r2( 2 ), r2( 3 ), 'linewidth', 4, 'color', [ 0.1,0.1,0.1] )
 quiver3( a, x, y, z, r3( 1 ), r3( 2 ), r3( 3 ), 'linewidth', 4, 'color', [ 0.1,0.1,0.1] )
+
+set( a, 'xlim', [0.2, 1.1], 'ylim',[-0.3, 0.31], 'zlim', [ 0.2, 0.38 ] )
+xlabel( a, '$X$ (m)', 'fontsize', 40 )
+ylabel( a, '$Y$ (m)', 'fontsize', 40 )
+zlabel( a, '$Z$ (m)', 'fontsize', 40 )
+
+fig_save( f, './images/sec514_task_pos_orient_type1_plot2' )
 
 
 %% (1G) Section 5.1.4: Task-discrete Position and orientation w Redund, Type 2, Plot 1
@@ -476,7 +486,13 @@ plot3( a, data.p_arr(  :, 1 ), data.p_arr(  :, 2 ), data.p_arr(  :, 3 ), 'linewi
 % Update transformation 
 view( [ 90, 0 ] )
 axis equal
-set( a, 'visible', 'off', 'xlim', [-0.2794,0.9169], 'ylim', [-0.4136,0.5], 'zlim', [-0.0270,0.6121] )
+set( a, 'xlim', [-0.2794,0.9169], 'ylim', [-0.44,0.42], 'zlim', [0,0.6121] ) 
+set( a, 'visible', 'off' )
+xlabel( a, '$X$ (m)')
+ylabel( a, '$Y$ (m)')
+zlabel( a, '$Z$ (m)')
+fig_save( f, './images/sec514_task_pos_orient_type2_plot1' )
+
 
 %% (1H) Section 5.1.4: Task-discrete Position and orientation w Redund, Type 2, Plot 2
 
@@ -486,10 +502,10 @@ data = load( './data/sec514_task_pos_orient_redunt2.mat' );
 f = figure( ); a = axes( 'parent', f );
 hold on
 plot3( a, data.p0_arr( :, 1 ), data.p0_arr( :, 2 ), data.p0_arr( :, 3 ), 'linewidth', 10, 'color', 'k', 'linestyle', ':' )
-plot3( a, data.p_arr(  :, 1 ), data.p_arr(  :, 2 ), data.p_arr(  :, 3 ), 'linewidth', 5, 'linestyle', '-', 'color', [0.8500 0.3250 0.0980] )
+plot3( a, data.p_arr(  :, 1 ), data.p_arr(  :, 2 ), data.p_arr(  :, 3 ), 'linewidth', 5, 'linestyle', '-', 'color', c_blue )
 axis equal
 
-set( a, 'visible', 'off' )
+set( a, 'xticklabel', {}, 'yticklabel', {} ,'zticklabel', {}  )
 view( [90, 0 ])
 
 Np = length( data.t_arr );
@@ -517,7 +533,7 @@ for i = 1: length( time_arr )
     r3 = scl * R_tmp( :, 3 );
     
     
-    scatter3( a, x, y, z, 500, 'filled', 'markerfacecolor', 'w', 'markeredgecolor', [0.8500 0.3250 0.0980], 'linewidth', 5 )
+    scatter3( a, x, y, z, 500, 'filled', 'markerfacecolor', 'w', 'markeredgecolor', c_blue, 'linewidth', 5 )
     quiver3( a, x, y, z, r1( 1 ), r1( 2 ), r1( 3 ), 'linewidth', 12, 'color', 'r' )
     quiver3( a, x, y, z, r2( 1 ), r2( 2 ), r2( 3 ), 'linewidth', 12, 'color', 'g' )
     quiver3( a, x, y, z, r3( 1 ), r3( 2 ), r3( 3 ), 'linewidth', 12, 'color', 'b' )
@@ -543,7 +559,7 @@ p0_end = data.p0_arr( end, : );
 x =0.1+p0_end( 1 );
 y = p0_end( 2 );
 z = p0_end( 3 );
-scatter3( a, x, y, z, 500, 'filled', 'markerfacecolor', 'w', 'markeredgecolor', [0.8500 0.3250 0.0980], 'linewidth', 5 )
+scatter3( a, x, y, z, 500, 'filled', 'markerfacecolor', 'w', 'markeredgecolor', c_blue, 'linewidth', 5 )
 
 quiver3( a, x, y, z, r1( 1 ), r1( 2 ), r1( 3 ), 'linewidth', 8, 'color', 'r' )
 quiver3( a, x, y, z, r2( 1 ), r2( 2 ), r2( 3 ), 'linewidth', 8, 'color', 'g' )
@@ -552,6 +568,13 @@ quiver3( a, x, y, z, r3( 1 ), r3( 2 ), r3( 3 ), 'linewidth', 8, 'color', 'b' )
 quiver3( a, x, y, z, r1( 1 ), r1( 2 ), r1( 3 ), 'linewidth', 4, 'color', [ 0.1,0.1,0.1] )
 quiver3( a, x, y, z, r2( 1 ), r2( 2 ), r2( 3 ), 'linewidth', 4, 'color', [ 0.1,0.1,0.1] )
 quiver3( a, x, y, z, r3( 1 ), r3( 2 ), r3( 3 ), 'linewidth', 4, 'color', [ 0.1,0.1,0.1] )
+set( a, 'xlim', [0.2, 1.1], 'ylim',[-0.3, 0.31], 'zlim', [ 0.2, 0.38 ] )
+xlabel( a, '$X$ (m)', 'fontsize', 40 )
+ylabel( a, '$Y$ (m)', 'fontsize', 40 )
+zlabel( a, '$Z$ (m)', 'fontsize', 40 )
+
+fig_save( f, './images/sec514_task_pos_orient_type2_plot2' )
+
 
 %% (1I) Section 5.1.4: Task-discrete Position and orientation w Redund, Comparison between Type 1 and 2
 
