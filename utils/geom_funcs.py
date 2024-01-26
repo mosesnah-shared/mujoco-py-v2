@@ -21,38 +21,45 @@ def rotz( q ):
 
     return Rz
 
-
-
-
-def geodesicSO3( rot1, rot2, t0i, D, t):
+def is_skew_symmetric( matrix ):
     """
-    Compute the geodesic curve between two rotation matrices with respect to time.
-
-    :param rot1: A 3x3 rotation matrix at the start.
-    :param tot2: A 3x3 rotation matrix at the end.
-    :param t0i: Initial time for the interpolation.
-    :param D: Duration of the interpolation.
-    :param t: Current time.
-    :return: A 3x3 rotation matrix representing the current state of rotation.
-    """
-    # Before t0i, use rotation_matrix1
-    if t <= t0i:
-        return rot1
+    Check if a matrix is skew-symmetric.
     
-    # After t0i + D, use rotation_matrix2
-    elif t >= t0i + D:
-        return rot2
+    Parameters:
+    matrix (numpy array): The matrix to check.
+    
+    Returns:
+    is_skew (bool): True if the matrix is skew-symmetric, False otherwise.
+    """
+    # Check if the matrix is square
+    if matrix.shape[0] != matrix.shape[1]:
+        return False
+    
+    # Check if the matrix is equal to the negation of its transpose
+    return np.allclose(matrix, -matrix.T)
 
-    # During the interpolation interval
-    else:
-        # Normalized time factor for interpolation
-        tau = (t - t0i) / D
-        
-        # Interpolate using slerp
-        rot_interp = rot1 @ R3_to_SO3( tau * SO3_to_R3( rot1.T @ rot2 ) )
 
-        return rot_interp
+def R3_to_so3( w ):
+    """
+    Convert a 3-element vector 'w' to a skew-symmetric matrix.
+    """
 
+    if w.shape != (3,):
+        raise ValueError("Input 'w' must be a 3-element vector")
+
+
+    return np.array( [ [   0, -w[2],  w[1] ],
+                       [ w[2],    0, -w[0] ],
+                       [-w[1], w[0],     0 ] ])
+
+def so3_to_R3( mat ):
+    """
+    Convert a 3-element vector 'w' to a skew-symmetric matrix.
+    """
+
+    assert( is_skew_symmetric( mat ) )
+
+    return np.array( [ mat[ 2,1  ], mat[ 0, 2], mat[ 1, 0 ] ] )
 
 
 def SO3_to_R3(rotation_matrix):
@@ -87,7 +94,7 @@ def R3_to_SO3( r3_vector ):
         return np.eye(3)
     
     axis = r3_vector / angle
-    skew_symmetric = np.array([[0, -axis[2], axis[1]], [axis[2], 0, -axis[0]], [-axis[1], axis[0], 0]])
+    skew_symmetric = R3_to_so3( axis )
     rotation_matrix = np.eye(3) + np.sin(angle) * skew_symmetric + (1 - np.cos(angle)) * np.dot(skew_symmetric, skew_symmetric)
 
     return rotation_matrix

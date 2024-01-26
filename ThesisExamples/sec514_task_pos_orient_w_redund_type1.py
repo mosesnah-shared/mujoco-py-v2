@@ -6,7 +6,7 @@ import mujoco_viewer
 sys.path += [ "controllers", "utils" ]
 
 from utils    import min_jerk_traj
-from geom_funcs import rotx, roty, rotz, geodesicSO3
+from geom_funcs import rotx, R3_to_SO3, SO3_to_R3
 from scipy.io import savemat
 from scipy.spatial.transform import Rotation
 
@@ -27,7 +27,7 @@ np.set_printoptions( precision = 4, threshold = 9, suppress = True )
 T        = 8.                       # Total Simulation Time
 dt       = model.opt.timestep       # Time-step for the simulation (set in xml file)
 fps      = 30                       # Frames per second
-save_ps  = 100                      # Saving point per second
+save_ps  = 1000                     # Saving point per second
 n_frames = 0                        # The current frame of the simulation
 n_saves  = 0                        # Update for the saving point
 speed    = 1.0                      # The speed of the simulator
@@ -66,6 +66,17 @@ id_EE = model.site( EE_site ).id
 p   = data.site_xpos[ id_EE ]
 Rsb = data.site_xmat[ id_EE ]
 
+# Saving the position and orientation of 7 links
+p_ref = []
+R_ref = [] 
+
+for i in range( 7 ):
+    name = "iiwa14_link_" + str( i + 1 ) 
+
+
+    p_ref.append( data.body( name ).xpos )
+    R_ref.append( data.body( name ).xmat )
+
 Jp = np.zeros( ( 3, model.nq ) )
 Jr = np.zeros( ( 3, model.nq ) )
 
@@ -81,9 +92,11 @@ pf = pi - 2 * np.array( [0.0, pi[ 1 ], 0.0])
 t0 = 2.0
 D  = 2.0
 
-ang = 80 
+ang = 90 
 Rinit = np.copy( Rsb ).reshape( 3, -1 )
 Rgoal = Rinit @ rotx( ang*np.pi/180 ) 
+Rdel  = Rinit.T @ Rgoal
+wdel  = SO3_to_R3( Rdel )
 
 # Flags
 is_save = True
@@ -97,7 +110,10 @@ p0_mat  = [ ]
 dq_mat  = [ ] 
 dp_mat  = [ ] 
 dp0_mat = [ ] 
-
+p_links_save = [ ]
+R_links_save = [ ]
+R_mat  = [ ]
+R0_mat = [ ]
 
 while data.time <= T:
 
@@ -114,7 +130,10 @@ while data.time <= T:
     # For orientation
     Rcurr = np.copy( Rsb ).reshape( 3, -1 )
 
-    R0 = geodesicSO3( Rinit, Rgoal, t0, D, data.time )
+    # Get the R0 as minimum-jerk trajectory
+    tmp, _, _ = min_jerk_traj( data.time, t0, t0 + D, np.zeros( 3 ), wdel )
+
+    R0 = Rinit @ R3_to_SO3( tmp )
 
     tmp1 = Rotation.from_matrix( Rcurr.T @ R0 )
     tau_imp2 = Jr.T @ ( kr * Rcurr @ tmp1.as_rotvec( ) - br * Jr @ dq )
@@ -140,12 +159,27 @@ while data.time <= T:
         p0_mat.append(  np.copy( p0  ) )    
         dp_mat.append(  np.copy( dp  ) )
         dp0_mat.append( np.copy( dp0 ) )    
+        R_mat.append(    np.copy( Rsb ).reshape( 3, -1 ) ) 
+        R0_mat.append(   R0 )    
+
+        # For this, one needs to also save the link positions
+        # Also save the robot's link position and rotation matrices 
+        p_tmp = []
+        R_tmp = []
+        for i in range( 7 ):
+            p_tmp.append( np.copy( p_ref[ i ] ) )
+            R_tmp.append( np.copy( R_ref[ i ] ).reshape( 3, -1 ) )
+
+        # Also save the robot's link position and rotation matrices 
+        p_links_save.append( p_tmp )
+        R_links_save.append( R_tmp )               
 
 # Saving the data
 if is_save:
-    data_dic = { "t_arr": t_mat, "q_arr": q_mat, "p_arr": p_mat, 
-                "dp_arr": dp_mat, "p0_arr": p0_mat, "dq_arr": dq_mat, "dp0_arr": dp0_mat, "Kp": Kp, "Bq": Bp }
-    savemat( "./ThesisExamples/data/sec514_task_pos_orient_redunt.mat", data_dic )
+    data_dic = { "t_arr": t_mat, "q_arr": q_mat, "p_arr": p_mat, "R_arr": R_mat, "R0_arr": R0_mat,
+                "dp_arr": dp_mat, "p0_arr": p0_mat, "dq_arr": dq_mat, "dp0_arr": dp0_mat, "Kp": Kp, "Bp": Bp, 
+                 "kr": kr, "br": br, "Bq": Bq, "p_links": p_links_save, "R_links": R_links_save }
+    savemat( "./ThesisExamples/data/sec514_task_pos_orient_redunt1.mat", data_dic )
 
 if is_view:            
     viewer.close()
