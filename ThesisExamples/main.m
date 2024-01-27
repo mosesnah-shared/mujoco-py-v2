@@ -578,91 +578,36 @@ fig_save( f, './images/sec514_task_pos_orient_type2_plot2' )
 
 %% (1I) Section 5.1.4: Task-discrete Position and orientation w Redund, Comparison between Type 1 and 2
 
+close all
+
 % For visualization, we will use Explicit
-data1 = load( './data/sec514_task_pos_orient_redunt1.mat' );
-data2 = load( './data/sec514_task_pos_orient_redunt2.mat' );
+data1 = load( './data/sec514_task_pos_orient_redunt1_cmp.mat' );
+data2 = load( './data/sec514_task_pos_orient_redunt2_cmp.mat' );
 
-f = figure( ); a = axes( 'parent', f );
+f = figure( ); 
+a = subplot( 2, 1, 1 ); set( a, 'parent', f );
 hold on
-plot3( a, data1.p0_arr( :, 1 ), data1.p0_arr( :, 2 ), data1.p0_arr( :, 3 ), 'linewidth', 10, 'color', 'k', 'linestyle', ':' )
-plot3( a, data1.p_arr(  :, 1 ), data1.p_arr(  :, 2 ), data1.p_arr(  :, 3 ), 'linewidth', 5, 'linestyle', '-', 'color', [0.8500 0.3250 0.0980] )
-plot3( a, data2.p_arr(  :, 1 ), data2.p_arr(  :, 2 ), data2.p_arr(  :, 3 ), 'linewidth', 5, 'linestyle', '-', 'color', [0.8500 0.3250 0.0980] )
-axis equal
 
-set( a, 'visible', 'off' )
-view( [90, 0 ])
+delp = data1.p_arr - data2.p_arr;
+plot( a, data1.t_arr, vecnorm( delp' ), 'color', c_blue )
 
-Np = length( data.t_arr );
+set( a, 'xticklabel', {}, 'fontsize', 40, 'xtick', [0:4:16], 'ylim',[0, 0.01] );
+title( a, '$||\mathbf{p}_1(t)-\mathbf{p}_2(t)||$ (m)' ,'fontsize', 40 )
 
-time_arr = [ 1, 2600, 2900,3100,3300, Np ];
-Rgoal = squeeze( data1.R_arr( 1, :, : ) ) * rotx( 80 * pi/180 );
-
-scl  = 0.04;
-scl1 = 0.05;
-for i = 1: length( time_arr )
-    
-    step = time_arr( i );
-    
-    % Adding the markers and also orientation
-    p_tmp = data1.p_arr( step, : );
-    x = 0.1 + p_tmp( 1 );
-    y =       p_tmp( 2 );
-    z =       p_tmp( 3 );
-    
-    
-    R_tmp = squeeze( data1.R_arr( step , :, : ) );
-    
-    r1 = scl * R_tmp( :, 1 );
-    r2 = scl * R_tmp( :, 2 );
-    r3 = scl * R_tmp( :, 3 );
-    
-    
-    scatter3( a, x, y, z, 500, 'filled', 'markerfacecolor', 'w', 'markeredgecolor', [0.8500 0.3250 0.0980], 'linewidth', 5 )
-    quiver3( a, x, y, z, r1( 1 ), r1( 2 ), r1( 3 ), 'linewidth', 12, 'color', 'r' )
-    quiver3( a, x, y, z, r2( 1 ), r2( 2 ), r2( 3 ), 'linewidth', 12, 'color', 'g' )
-    quiver3( a, x, y, z, r3( 1 ), r3( 2 ), r3( 3 ), 'linewidth', 12, 'color', 'b' )
-    
-    R_tmp = squeeze( data2.R_arr( step , :, : ) );
-    
-    r1 = scl * R_tmp( :, 1 );
-    r2 = scl * R_tmp( :, 2 );
-    r3 = scl * R_tmp( :, 3 );
-    
-    
-    scatter3( a, x, y, z, 500, 'filled', 'markerfacecolor', 'w', 'markeredgecolor', [0.8500 0.3250 0.0980], 'linewidth', 5 )
-    quiver3( a, x, y, z, r1( 1 ), r1( 2 ), r1( 3 ), 'linewidth', 12, 'color', 'r' )
-    quiver3( a, x, y, z, r2( 1 ), r2( 2 ), r2( 3 ), 'linewidth', 12, 'color', 'g' )
-    quiver3( a, x, y, z, r3( 1 ), r3( 2 ), r3( 3 ), 'linewidth', 12, 'color', 'b' )
-    
-    
-    R_tmp = squeeze( data1.R0_arr( step , :, : ) );
-
-    r1 = scl1 * R_tmp( :, 1 );
-    r2 = scl1 * R_tmp( :, 2 );
-    r3 = scl1 * R_tmp( :, 3 );
-    
-    quiver3( a, x, y, z, r1( 1 ), r1( 2 ), r1( 3 ), 'linewidth', 4, 'color', [ 0.1,0.1,0.1] )
-    quiver3( a, x, y, z, r2( 1 ), r2( 2 ), r2( 3 ), 'linewidth', 4, 'color', [ 0.1,0.1,0.1] )
-    quiver3( a, x, y, z, r3( 1 ), r3( 2 ), r3( 3 ), 'linewidth', 4, 'color', [ 0.1,0.1,0.1] )
-        
+a2 = subplot( 2, 1, 2 );
+% Get delta array
+N = length( data1.t_arr );
+del = zeros( 3, N );
+for i = 1 : N
+    R1 = squeeze( data1.R_arr( i, :, : ) );
+    R2 = squeeze( data2.R_arr( i, :, : ) );
+    del( :, i ) = so3_to_R3( LogSO3( R1' * R2 ) );
 end
 
-Rgoal = squeeze( data.R0_arr( end, :, : ) );
-r1 = scl * Rgoal( :, 1 );
-r2 = scl * Rgoal( :, 2 );
-r3 = scl * Rgoal( :, 3 );
+plot( a2, data1.t_arr, vecnorm( del ), 'color', c_blue )
+xlabel( a2, '$t$ (s)' )
+title( a2, '$||$Log($\mathbf{R}_1^{\top}(t) \mathbf{R}_2(t))||$ (rad)' ,'fontsize', 40 )
+set( a2, 'xticklabel', {}, 'fontsize', 40, 'xtick', [0:4:16], 'ylim',[0, 0.301] );
+fig_save( f, './images/sec514_error' )
 
-p0_end = data.p0_arr( end, : );
-x =0.1+p0_end( 1 );
-y = p0_end( 2 );
-z = p0_end( 3 );
-scatter3( a, x, y, z, 500, 'filled', 'markerfacecolor', 'w', 'markeredgecolor', [0.8500 0.3250 0.0980], 'linewidth', 5 )
-
-quiver3( a, x, y, z, r1( 1 ), r1( 2 ), r1( 3 ), 'linewidth', 8, 'color', 'r' )
-quiver3( a, x, y, z, r2( 1 ), r2( 2 ), r2( 3 ), 'linewidth', 8, 'color', 'g' )
-quiver3( a, x, y, z, r3( 1 ), r3( 2 ), r3( 3 ), 'linewidth', 8, 'color', 'b' )
-
-quiver3( a, x, y, z, r1( 1 ), r1( 2 ), r1( 3 ), 'linewidth', 4, 'color', [ 0.1,0.1,0.1] )
-quiver3( a, x, y, z, r2( 1 ), r2( 2 ), r2( 3 ), 'linewidth', 4, 'color', [ 0.1,0.1,0.1] )
-quiver3( a, x, y, z, r3( 1 ), r3( 2 ), r3( 3 ), 'linewidth', 4, 'color', [ 0.1,0.1,0.1] )
 
