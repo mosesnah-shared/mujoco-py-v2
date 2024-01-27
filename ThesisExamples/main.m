@@ -607,7 +607,7 @@ end
 plot( a2, data1.t_arr, vecnorm( del ), 'color', c_blue )
 xlabel( a2, '$t$ (s)' )
 title( a2, '$||$Log($\mathbf{R}_1^{\top}(t) \mathbf{R}_2(t))||$ (rad)' ,'fontsize', 40 )
-set( a2, 'xticklabel', {}, 'fontsize', 40, 'xtick', [0:4:16], 'ylim',[0, 0.301] );
+set( a2, 'fontsize', 40, 'xtick', [0:4:16], 'ylim',[0, 0.301] );
 fig_save( f, './images/sec514_error' )
 
 
