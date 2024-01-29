@@ -196,10 +196,10 @@ while data.time <= T:
 
 # Saving the data
 if is_save:
-    data_dic = { "t_arr": t_mat, "q_arr": q_mat, "p_arr": p_mat, "R_arr": R_mat, "R0_arr": R0_mat,
+    data_dic = { "t_arr": t_mat, "q_arr": q_mat, "p_arr": p_mat, "R_arr": R_mat, "R0_arr": R0_mat, "obs": obs, "obs_r": obs_r,
                 "dp_arr": dp_mat, "p0_arr": p0_mat, "dq_arr": dq_mat, "dp0_arr": dp0_mat, "Kp": Kp, "Bp": Bp, 
-                 "Keps": Keps, "Beps": Beps, "Bq": Bq, "p_links": p_links_save, "R_links": R_links_save }
-    savemat( "./ThesisExamples/data/sec514_task_pos_orient_redunt2.mat", data_dic )
+                 "Keps": Keps, "Beps": Beps, "Bq": Bq, "kr": kr, "p_links": p_links_save, "R_links": R_links_save }
+    savemat( "./ThesisExamples/data/sec521_obstacle_avoidance.mat", data_dic )
 
 if is_view:            
     viewer.close()

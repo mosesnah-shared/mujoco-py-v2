@@ -610,4 +610,99 @@ title( a2, '$||$Log($\mathbf{R}_1^{\top}(t) \mathbf{R}_2(t))||$ (rad)' ,'fontsiz
 set( a2, 'fontsize', 40, 'xtick', [0:4:16], 'ylim',[0, 0.301] );
 fig_save( f, './images/sec514_error' )
 
+%% (1I) Section 5.2.1: Obstacle avoidance
+
+close all
+
+% For visualization, we will use Explicit
+data = load( './data/sec521_obstacle_avoidance.mat' );
+
+
+% Importing the MuJoCo iiwa14's file
+% Note that there is a model file difference between EXPLICIT
+% Loop through each file
+
+N_stl = 7;
+
+% For selecing the time step
+Np = length( data.t_arr );
+time_arr = [ 1, 2900 ,3300, Np ];
+
+f = figure( ); 
+a = axes( 'parent', f );
+hold on; % Keep the figure open to plot the next STL file
+
+patches = cell( length( time_arr ), N_stl );
+
+for j = 1 : length( time_arr )
+    
+    step = time_arr( j );
+    
+    for i = 1:N_stl
+        % Read the STL file
+        [ vertices, faces ] = stlread( ['../models/iiwa14/meshes/link_', num2str( i ), '.stl' ] );
+
+        % Plot the STL file
+        if  i == 7
+            patches{ j, i } = patch('Vertices', vertices.Points, 'Faces', vertices.ConnectivityList, ...
+                                 'FaceColor', c_blue, 'EdgeColor', [0.0,0.0,0.0], 'FaceAlpha', 0.8, 'EdgeAlpha', 0.2 );
+        else
+            patches{ j, i } = patch('Vertices', vertices.Points, 'Faces', vertices.ConnectivityList, ...
+                                 'FaceColor', [0.8, 0.8, 0.8], 'EdgeColor', [0.0,0.0,0.0], 'FaceAlpha', 0.8, 'EdgeAlpha', 0.2 );
+        end
+
+        % Get the position for each-link and update 
+        p_tmp = squeeze( data.p_links( step , i, : ) ); 
+        R_tmp = squeeze( data.R_links( step , i, :, : ) );
+        H_tmp = [ R_tmp, p_tmp; 0,0,0,1];
+
+        hg = hgtransform( 'Matrix', H_tmp );
+        set( patches{ j, i }, 'Parent', hg);
+
+    end
+
+    % Adding the markers and also orientation
+    p_tmp = data.p_arr( step, : );
+    x = 0.1 + p_tmp( 1 );
+    y =       p_tmp( 2 );
+    z =       p_tmp( 3 );
+    
+    scl = 0.05;
+    R_tmp = squeeze( data.R_arr( step , :, : ) );
+    
+    r1 = scl * R_tmp( :, 1 );
+    r2 = scl * R_tmp( :, 2 );
+    r3 = scl * R_tmp( :, 3 );
+    
+    
+    scatter3( a, x, y, z, 500, 'filled', 'markerfacecolor', 'w', 'markeredgecolor',c_blue, 'linewidth', 5 )
+    quiver3( a, x, y, z, r1( 1 ), r1( 2 ), r1( 3 ), 'linewidth', 8, 'color', 'r' )
+    quiver3( a, x, y, z, r2( 1 ), r2( 2 ), r2( 3 ), 'linewidth', 8, 'color', 'g' )
+    quiver3( a, x, y, z, r3( 1 ), r3( 2 ), r3( 3 ), 'linewidth', 8, 'color', 'b' )
+    
+end
+
+lighting gouraud
+light('Position',[1 0 0],'Style','infinite');
+
+plot3( a, data.p0_arr( :, 1 ), data.p0_arr( :, 2 ), data.p0_arr( :, 3 ), 'linewidth', 5, 'color', 'k', 'linestyle', ':' )
+plot3( a, data.p_arr(  :, 1 ), data.p_arr(  :, 2 ), data.p_arr(  :, 3 ), 'linewidth', 10, 'linestyle', '-', 'color', c_blue )
+
+% Update transformation 
+view( [ 90, 0 ] )
+axis equal
+set( a, 'xlim', [-0.2794,0.9169], 'ylim', [-0.44,0.42], 'zlim', [0,0.6121] ) 
+set( a, 'xticklabel', {}, 'yticklabel', {},'zticklabel', {} ,'visible', 'off')
+
+% Drawing the level surface for the obstacle potential field
+% The Values that we want to draw
+obs = data.obs;
+kr  = data.kr;
+
+val = [ 1, 2, 4, 7] * 1e-7;
+for V = val
+    ( V/kr)^(-1/5)
+end
+
+%fig_save( f, './images/sec521_obstacle_avoidance' )
 
