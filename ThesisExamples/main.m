@@ -626,7 +626,7 @@ N_stl = 7;
 
 % For selecing the time step
 Np = length( data.t_arr );
-time_arr = [ 1, 2900 ,3500, Np ];
+time_arr = [ 1, 2900 ,3600, 3900, Np ];
 
 f = figure( ); 
 a = axes( 'parent', f );
@@ -699,9 +699,9 @@ set( a, 'xticklabel', {}, 'yticklabel', {},'zticklabel', {} ,'visible', 'off')
 obs = data.obs;
 kr  = data.kr;
 
-scatter3( a, 0.1+data.obs( 1 ), data.obs( 2 ), data.obs( 3 ), 1000, 'o', 'filled', 'markeredgecolor', 'k', 'markerfacecolor', c_orange, 'linewidth', 3 )
+scatter3( a, 0.1+data.obs( 1 ), data.obs( 2 ), data.obs( 3 ), 1500, 's', 'filled', 'markeredgecolor', 'k', 'markerfacecolor', 'w', 'linewidth', 6 )
 
-%fig_save( f, './images/sec521_obstacle_avoidance' )
+fig_save( f, './images/sec521_obstacle_avoidance_example1_plot1' )
 
 %% (1J) Section 5.2.1: Obstacle avoidance, Example #1, Plot2
 
@@ -720,17 +720,28 @@ y_arr =    0:dy:0.6;
 
 % Get the obstacle yz array
 obs = data.obs( 2:3 );
-kr  = data.kr;       
-val = kr./sqrt( ( X-obs( 1 ) ).^2 + ( Y-obs( 2 ) ).^2 + 0.1 ).^12;
+kr  = 2*data.kr;       
+val = kr./sqrt( ( X-obs( 1 ) ).^2 + ( Y-obs( 2 ) ).^2 + 0.05 ).^12;
 
 pcolor(a, X, Y, val );
-set( a, 'xlim', [ -0.3, 0.3], 'ylim', [0,0.6] )
-
+grid on
 plot( a, data.p_arr( :, 2 ), data.p_arr( :, 3 ), 'linewidth', 10, 'color', c_blue )
-plot( a, data.p0_arr( :, 2 ), data.p0_arr( :, 3 ), 'linewidth', 16, 'color', 'k', 'linestyle', '--' )
-scatter( a, data.obs( 2 ), data.obs( 3 ), 1000, 'o', 'filled', 'markeredgecolor', 'k', 'markerfacecolor', c_orange, 'linewidth', 3 )
+plot( a, data.p0_arr( :, 2 ), data.p0_arr( :, 3 ), 'linewidth', 8, 'color', 'k', 'linestyle', ':' )
+scatter( a, data.obs( 2 ), data.obs( 3 ), 2000, 's', 'filled', 'markeredgecolor', 'k', 'markerfacecolor', 'w', 'linewidth', 6)
+
+scatter( a, data.p0_arr( 1, 2 ), data.p0_arr( 1, 3 ), 300, 'o', 'filled', 'markeredgecolor', 'k', 'markerfacecolor', 'w', 'linewidth', 3 )
+text( a, data.p0_arr( 1, 2 )-0.03, data.p0_arr( 1, 3 )-0.05, 'Start', 'fontsize', 40)
+scatter( a, data.p0_arr( end, 2 ), data.p0_arr( end, 3 ), 300, 'd', 'filled', 'markeredgecolor', 'k', 'markerfacecolor', 'w', 'linewidth', 3 )
+text( a, data.p0_arr( end, 2 )-0.04, data.p0_arr( end, 3 )-0.05, 'Goal', 'fontsize', 40)
 shading flat; 
-colormap( 'gray' )
+axis equal
+set( a, 'xlim', [ -0.3, 0.301], 'ylim', [0,0.6], 'fontsize', 40, 'xtick', -0.3:0.3:0.3, 'ytick', 0:0.3:0.6 )
+xlabel( '$X$ (m)', 'fontsize', 40 )
+ylabel( '$Y$ (m)', 'fontsize', 40 )
+colormap( 'sky' )
+
+
+fig_save( f, './images/sec521_obstacle_avoidance_example1_plot2' )
 
 
 %% (1K) Section 5.2.1: Obstacle avoidance, Example #2, Plot1
@@ -748,7 +759,7 @@ N_stl = 7;
 
 % For selecing the time step
 Np = length( data.t_arr );
-time_arr = [ 1, 2900 ,3500, Np ];
+time_arr = [ 1, 3200, 3900, Np ];
 
 f = figure( ); 
 a = axes( 'parent', f );
@@ -813,15 +824,17 @@ plot3( a, data.p_arr(  :, 1 ), data.p_arr(  :, 2 ), data.p_arr(  :, 3 ), 'linewi
 
 % Drawing the level surface for the obstacle potential field
 % The Values that we want to draw
-scatter3( a, data.obs1( 1 ), data.obs1( 2 ), data.obs1( 3 ), 1000, 'o', 'filled', 'markeredgecolor', 'k', 'markerfacecolor', c_orange, 'linewidth', 3 )
-scatter3( a, data.obs2( 1 ), data.obs2( 2 ), data.obs2( 3 ), 1000, 'o', 'filled', 'markeredgecolor', 'k', 'markerfacecolor', c_orange, 'linewidth', 3 )
-scatter3( a, data.obs3( 1 ), data.obs3( 2 ), data.obs3( 3 ), 1000, 'o', 'filled', 'markeredgecolor', 'k', 'markerfacecolor', c_orange, 'linewidth', 3 )
+scatter3( a, 0.1+data.obs1( 1 ), data.obs1( 2 ), data.obs1( 3 ), 1000, 's', 'filled', 'markeredgecolor', 'k', 'markerfacecolor', 'w', 'linewidth', 6 )
+scatter3( a, 0.1+data.obs2( 1 ), data.obs2( 2 ), data.obs2( 3 ), 1000, 's', 'filled', 'markeredgecolor', 'k', 'markerfacecolor', 'w', 'linewidth', 6 )
+scatter3( a, 0.1+data.obs3( 1 ), data.obs3( 2 ), data.obs3( 3 ), 1000, 's', 'filled', 'markeredgecolor', 'k', 'markerfacecolor', 'w', 'linewidth', 6 )
 
 % Update transformation 
 view( [ 90, 0 ] )
 axis equal
 set( a, 'xlim', [-0.2794,0.9169], 'ylim', [-0.44,0.42], 'zlim', [0,0.6121] ) 
 set( a, 'xticklabel', {}, 'yticklabel', {},'zticklabel', {} ,'visible', 'off')
+
+fig_save( f, './images/sec521_obstacle_avoidance_example2_plot1' )
 
 %% (1L) Section 5.2.1: Obstacle avoidance, Example #2, Plot2
 
@@ -841,23 +854,31 @@ y_arr =    0:dy:0.6;
 % Get the obstacle yz array
 obs1 = data.obs1( 2:3 );
 kr  = data.kr;       
-val1 = kr./sqrt( ( X-obs1( 1 ) ).^2 + ( Y-obs1( 2 ) ).^2 + 0.01 ).^12;
+val1 = kr./sqrt( ( X-obs1( 1 ) ).^2 + ( Y-obs1( 2 ) ).^2 + 0.03 ).^12;
 
 obs2 = data.obs2( 2:3 );
 kr  = data.kr;       
-val2 = kr./sqrt( ( X-obs2( 1 ) ).^2 + ( Y-obs2( 2 ) ).^2 + 0.01 ).^12;
+val2 = kr./sqrt( ( X-obs2( 1 ) ).^2 + ( Y-obs2( 2 ) ).^2 + 0.03 ).^12;
 
 obs3 = data.obs3( 2:3 );
 kr  = data.kr;       
-val3 = kr./sqrt( ( X-obs3( 1 ) ).^2 + ( Y-obs3( 2 ) ).^2 + 0.01 ).^12;
+val3 = kr./sqrt( ( X-obs3( 1 ) ).^2 + ( Y-obs3( 2 ) ).^2 + 0.03 ).^12;
 
 pcolor(a, X, Y, val1+val2+val3 );
-set( a, 'xlim', [ -0.3, 0.3], 'ylim', [0,0.6] )
-
 plot( a, data.p_arr( :, 2 ), data.p_arr( :, 3 ), 'linewidth', 10, 'color', c_blue )
-plot( a, data.p0_arr( :, 2 ), data.p0_arr( :, 3 ), 'linewidth', 16, 'color', 'k', 'linestyle', '--' )
-scatter( a, data.obs1( 2 ), data.obs1( 3 ), 1000, 'o', 'filled', 'markeredgecolor', 'k', 'markerfacecolor', c_orange, 'linewidth', 3 )
-scatter( a, data.obs2( 2 ), data.obs2( 3 ), 1000, 'o', 'filled', 'markeredgecolor', 'k', 'markerfacecolor', c_orange, 'linewidth', 3 )
-scatter( a, data.obs3( 2 ), data.obs3( 3 ), 1000, 'o', 'filled', 'markeredgecolor', 'k', 'markerfacecolor', c_orange, 'linewidth', 3 )
+plot( a, data.p0_arr( :, 2 ), data.p0_arr( :, 3 ), 'linewidth', 8, 'color', 'k', 'linestyle', ':' )
+scatter( a, data.obs1( 2 ), data.obs1( 3 ), 1300, 's', 'filled', 'markeredgecolor', 'k', 'markerfacecolor', 'w', 'linewidth', 3 )
+scatter( a, data.obs2( 2 ), data.obs2( 3 ), 1300, 's', 'filled', 'markeredgecolor', 'k', 'markerfacecolor', 'w', 'linewidth', 3 )
+scatter( a, data.obs3( 2 ), data.obs3( 3 ), 1300, 's', 'filled', 'markeredgecolor', 'k', 'markerfacecolor', 'w', 'linewidth', 3 )
+text( a, data.p0_arr( 1, 2 )-0.03, data.p0_arr( 1, 3 )-0.05, 'Start', 'fontsize', 40)
+text( a, data.p0_arr( end, 2 )-0.04, data.p0_arr( end, 3 )-0.05, 'Goal', 'fontsize', 40)
+
+scatter( a, data.p0_arr( 1, 2 ), data.p0_arr( 1, 3 ), 300, 'o', 'filled', 'markeredgecolor', 'k', 'markerfacecolor', 'w', 'linewidth', 3 )
+scatter( a, data.p0_arr( end, 2 ), data.p0_arr( end, 3 ), 300, 'd', 'filled', 'markeredgecolor', 'k', 'markerfacecolor', 'w', 'linewidth', 3 )
+
 shading flat; 
-colormap( 'copper' )
+colormap( 'sky' )
+axis equal
+set( a, 'xlim', [ -0.3, 0.301], 'ylim', [0,0.6], 'fontsize', 40, 'xtick', -0.3:0.3:0.3, 'ytick', 0:0.3:0.6 )
+
+fig_save( f, './images/sec521_obstacle_avoidance_example2_plot2' )

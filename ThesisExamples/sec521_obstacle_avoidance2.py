@@ -157,7 +157,7 @@ while data.time <= T:
 
     # Add case for obstacle avoidance.
     # Calculate the position of the obstacle
-    kr = 1e-8
+    kr = 1e-9
     tau_imp4 = Jp.T @ ( kr *( p - obs1 )/np.linalg.norm( p-obs1 )**12 )
     tau_imp5 = Jp.T @ ( kr *( p - obs2 )/np.linalg.norm( p-obs2 )**12 )
     tau_imp6 = Jp.T @ ( kr *( p - obs3 )/np.linalg.norm( p-obs3 )**12 )
