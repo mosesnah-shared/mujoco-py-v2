@@ -24,7 +24,7 @@ viewer = mujoco_viewer.MujocoViewer( model, data, hide_menus = True )
 np.set_printoptions( precision = 4, threshold = 9, suppress = True )
 
 # Parameters for the simulation
-T        = 10.                       # Total Simulation Time
+T        = 8.                       # Total Simulation Time
 dt       = model.opt.timestep       # Time-step for the simulation (set in xml file)
 fps      = 30                       # Frames per second
 save_ps  = 1000                     # Saving point per second
@@ -46,13 +46,13 @@ data.qpos[ 0:nq ] = q_init
 mujoco.mj_forward( model, data )
 
 # The impedances of the robot 
-Kp = 400 * np.eye( 3 )
+Kp = 200 * np.eye( 3 )
 Bp =  40 * np.eye( 3 )
 
 Bq = 20 * np.eye( model.nq )
 
-Keps = 50 * np.eye( 3 ) 
-Beps =  5 * np.eye( 3 )
+Keps = 12 * np.eye( 3 ) 
+Beps =  3 * np.eye( 3 )
 
 # The co-stiffness matrix
 Gr = 0.5*np.trace( Keps )*np.eye( 3 ) - Keps
@@ -118,7 +118,7 @@ R_mat  = [ ]
 R0_mat = [ ]
 
 # Lmax
-Lmax = 20
+Lmax = 5
 
 # Energys
 U1_mat = []
@@ -127,8 +127,12 @@ U3_mat = []
 kin_mat = []
 gain_mat = []
 
-gain = 1
+gain = 1.
 Etot = 0
+
+# If is_modulate
+is_mod = False   
+
 while data.time <= T:
 
     mujoco.mj_step( model, data )
@@ -176,17 +180,20 @@ while data.time <= T:
     mujoco.mj_fullM( model, Mmat, data.qM )
     Kin_eng = 0.5*dq.T @ Mmat @ dq
 
-    # Get lambda 
-    if Etot <= Lmax:
-        gain = 1.0
-    else:
-        gain = np.max( ( 0, ( Lmax-Kin_eng )/Utotal ) )
+    Etot = Kin_eng + Utotal        
 
-    Etot = Kin_eng + gain*Utotal
+    if is_mod:
+        # Get lambda 
+        if Etot <= Lmax:
+            gain = 1.0
+        else:
+            gain = np.max( ( 0, ( Lmax-Kin_eng )/Utotal ) )
+    else:
+        gain = 1 
 
     # Adding the Torque
     tau_imp1 *= gain
-    tau_imp2 *= gain
+    tau_imp2 *= gain        
     data.ctrl[ : ] = tau_imp1 + tau_imp2 + tau_imp3 
 
     # Update Visualization
@@ -232,7 +239,10 @@ if is_save:
                 "dp_arr": dp_mat, "p0_arr": p0_mat, "dq_arr": dq_mat, "dp0_arr": dp0_mat, "Kp": Kp, "Bp": Bp, 
                  "Keps": Keps, "Beps": Beps, "Bq": Bq, "p_links": p_links_save, "R_links": R_links_save, "U1_mat": U1_mat, 
                 "U2_mat": U2_mat, "U3_mat": U3_mat, "kin_mat": kin_mat, "gain_mat":gain_mat  }
-    savemat( "./ThesisExamples/data/sec531_contact_mod.mat", data_dic )
+    if is_mod:
+        savemat( "./ThesisExamples/data/sec531_contact_mod.mat", data_dic )
+    else:
+        savemat( "./ThesisExamples/data/sec531_contact.mat", data_dic )
 
 if is_view:            
     viewer.close()
