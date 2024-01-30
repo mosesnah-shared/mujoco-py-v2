@@ -116,7 +116,7 @@ R_mat  = [ ]
 R0_mat = [ ]
 
 # Located at the middle of the movement
-obs = 0.5*(pi + pf) - np.array( [0, 0, 0.01])
+obs = 0.5*(pi + pf) - np.array( [0, 0, 0.005])
 obs_r = 0.1
 
 while data.time <= T:
@@ -155,8 +155,8 @@ while data.time <= T:
 
     # Add case for obstacle avoidance.
     # Calculate the position of the obstacle
-    kr = 0.001
-    tau_imp4 = Jp.T @ ( kr *( p - obs )/np.linalg.norm( p-obs )**6 )
+    kr = 1e-8
+    tau_imp4 = Jp.T @ ( kr *( p - obs )/np.linalg.norm( p-obs )**12 )
 
 
     # Adding the Torque
