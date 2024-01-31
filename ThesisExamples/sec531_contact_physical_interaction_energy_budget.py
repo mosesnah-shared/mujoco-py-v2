@@ -10,7 +10,6 @@ from geom_funcs import rotx, R3_to_SO3, R3_to_so3, SO3_to_R3
 from scipy.io import savemat
 from scipy.spatial.transform import Rotation
 
-
 # Call the xml model file + data for MuJoCo
 dir_name   = './models/iiwa14/'
 robot_name = 'iiwa14_w_obj.xml'
@@ -24,7 +23,7 @@ viewer = mujoco_viewer.MujocoViewer( model, data, hide_menus = True )
 np.set_printoptions( precision = 4, threshold = 9, suppress = True )
 
 # Parameters for the simulation
-T        = 8.                       # Total Simulation Time
+T        = 16.                      # Total Simulation Time
 dt       = model.opt.timestep       # Time-step for the simulation (set in xml file)
 fps      = 30                       # Frames per second
 save_ps  = 1000                     # Saving point per second
@@ -46,13 +45,13 @@ data.qpos[ 0:nq ] = q_init
 mujoco.mj_forward( model, data )
 
 # The impedances of the robot 
-Kp = 200 * np.eye( 3 )
-Bp =  40 * np.eye( 3 )
+Kp = 1600 * np.eye( 3 )
+Bp =  800 * np.eye( 3 )
 
 Bq = 20 * np.eye( model.nq )
 
-Keps = 12 * np.eye( 3 ) 
-Beps =  3 * np.eye( 3 )
+Keps = 50 * np.eye( 3 ) 
+Beps =  5 * np.eye( 3 )
 
 # The co-stiffness matrix
 Gr = 0.5*np.trace( Keps )*np.eye( 3 ) - Keps
@@ -86,7 +85,6 @@ mujoco.mj_jacSite( model, data, Jp, Jr, id_EE )
 dp = Jp @ dq
 w  = Jr @ dq
 
-
 # Get the initial position of the robot's end-effector
 # and also the other parameters
 pi = np.copy( p )
@@ -118,7 +116,7 @@ R_mat  = [ ]
 R0_mat = [ ]
 
 # Lmax
-Lmax = 5
+Lmax = 10
 
 # Energys
 U1_mat = []
@@ -131,7 +129,7 @@ gain = 1.
 Etot = 0
 
 # If is_modulate
-is_mod = False   
+is_mod = True   
 
 while data.time <= T:
 

@@ -117,7 +117,7 @@ R0_mat = [ ]
 # Located at the middle of the movement
 obs1 = 0.5*(pi + pf) + np.array( [0.05, 0, 0.15])
 obs2 = 0.5*(pi + pf) - np.array( [0, 0, 0.005]) - np.array( [ 0, 0.10, 0])
-obs3 = 0.5*(pi + pf) - np.array( [0, 0, 0.005]) + np.array( [ 0, 0.10, 0])
+obs3 = 0.5*(pi + pf) + np.array( [0, 0, 0.1]) + np.array( [ 0, 0.10, 0])
 
 # Order and Magnitude
 m = 6
@@ -184,23 +184,23 @@ while data.time <= T:
     n_hat2 = ( p1-obs2 )/np.linalg.norm( p1-obs2 )
     n_hat3 = ( p1-obs3 )/np.linalg.norm( p1-obs3 )
 
-    tau_imp7 = ( k_obs * m/np.linalg.norm( p1-obs1 )**(m+1) ) * Jp.T @ n_hat1
-    tau_imp8 = ( k_obs * m/np.linalg.norm( p1-obs2 )**(m+1) ) * Jp.T @ n_hat2    
-    tau_imp9 = ( k_obs * m/np.linalg.norm( p1-obs3 )**(m+1) ) * Jp.T @ n_hat3
+    tau_imp7 = 10*( k_obs * m/np.linalg.norm( p1-obs1 )**(m+1) ) * Jp.T @ n_hat1
+    tau_imp8 = 10*( k_obs * m/np.linalg.norm( p1-obs2 )**(m+1) ) * Jp.T @ n_hat2    
+    tau_imp9 = 10*( k_obs * m/np.linalg.norm( p1-obs3 )**(m+1) ) * Jp.T @ n_hat3
 
     # Other points of the robot
     n_hat1 = ( p2-obs1 )/np.linalg.norm( p2-obs1 )
     n_hat2 = ( p2-obs2 )/np.linalg.norm( p2-obs2 )
     n_hat3 = ( p2-obs3 )/np.linalg.norm( p2-obs3 )
 
-    tau_imp10 = ( k_obs * m/np.linalg.norm( p2-obs1 )**(m+1) ) * Jp.T @ n_hat1
-    tau_imp11 = ( k_obs * m/np.linalg.norm( p2-obs2 )**(m+1) ) * Jp.T @ n_hat2    
-    tau_imp12 = ( k_obs * m/np.linalg.norm( p2-obs3 )**(m+1) ) * Jp.T @ n_hat3    
+    tau_imp10 = 10*( k_obs * m/np.linalg.norm( p2-obs1 )**(m+1) ) * Jp.T @ n_hat1
+    tau_imp11 = 10*( k_obs * m/np.linalg.norm( p2-obs2 )**(m+1) ) * Jp.T @ n_hat2    
+    tau_imp12 = 10*( k_obs * m/np.linalg.norm( p2-obs3 )**(m+1) ) * Jp.T @ n_hat3    
 
 
     # Adding the Torque
-    data.ctrl[ : ] = tau_imp1 + tau_imp2 + tau_imp3 + tau_imp4 + tau_imp5 + tau_imp6  \
-                     + tau_imp7 + tau_imp8 + tau_imp9 + tau_imp10 + tau_imp11 + tau_imp12
+    data.ctrl[ : ] = tau_imp1 + tau_imp2 + tau_imp3 +  tau_imp4 +  tau_imp5 +  tau_imp6 \
+                   + tau_imp7 + tau_imp8 + tau_imp9 + tau_imp10 + tau_imp11 + tau_imp12
 
     # Update Visualization
     if ( ( n_frames != ( data.time // t_update ) ) and is_view ):

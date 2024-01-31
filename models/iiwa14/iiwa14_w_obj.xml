@@ -82,7 +82,7 @@
 
             <body name="obstacle" pos="0.626 0 0.2809">
                 <!-- <geom name='geom_obs' type='box' size='0.05 0.05 0.05' pos='0 0 0' mass='0'/>         -->
-                <geom name='geom_obs' type='sphere' size='0.03' pos='0 0 0' mass='0'/>
+                <geom name='geom_obs' type='sphere' size='0.05' pos='0 0 0' mass='0'/>
             </body>
 
     </worldbody>
