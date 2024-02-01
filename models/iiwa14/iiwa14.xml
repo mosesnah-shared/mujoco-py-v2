@@ -58,6 +58,7 @@
                                     <site    pos="0 0 0.00" name="link6_start" />
                                     <inertial pos="0 0.0006 0.0004" quat="0.996112 0.088097 0 0" mass="2.3466" diaginertia="0.006509 0.00631585 0.00447015" />
                                     <site     pos="0 0.0006 0.0004" quat="0.996112 0.088097 0 0" name="link6_COM" />
+                                    <site     pos="0 0.040 0.0004"  quat="0.707107 -0.707107 0 0" name="link6_COM2" />
                                     <joint name="iiwa14_joint_6" pos="0 0 0" axis="0 0 1" limited="false" range="-2.0944 2.0944" damping="0.0" />
                                     <geom type="mesh" contype="0" conaffinity="0" group="1" mesh="iiwa14_link_6_vis" name="iiwa14_link_6_visual" rgba="1 0.423529 0.0392157 1" />
                                     <geom type="mesh" contype="0" rgba="1 0.423529 0.0392157 1" mesh="iiwa14_link_6" name="iiwa14_link_6_collision" />

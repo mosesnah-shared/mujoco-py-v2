@@ -667,7 +667,7 @@ for j = 1 : length( time_arr )
     y =       p_tmp( 2 );
     z =       p_tmp( 3 );
     
-    scl = 0.05;
+    scl = 0.03;
     R_tmp = squeeze( data.R_arr( step , :, : ) );
     
     r1 = scl * R_tmp( :, 1 );
@@ -696,31 +696,17 @@ set( a, 'xticklabel', {}, 'yticklabel', {},'zticklabel', {} ,'visible', 'off')
 
 % scatter3( a, 0.1+data.obs( 1 ), data.obs( 2 ), data.obs( 3 ), 1500, 's', 'filled', 'markeredgecolor', 'k', 'markerfacecolor', 'w', 'linewidth', 6 )
 
-lw = 0.05;
-coord = [ 0   0   0;
-         lw   0   0;
-         lw  lw   0;
-         0   lw   0;
-         0    0  lw;
-         lw   0  lw;
-         lw  lw  lw;
-         0   lw  lw;];
+r = 0.05;
+[X,Y,Z] = sphere;
 
-tmpx = data.obs( 1 )-lw/2;
-tmpy = data.obs( 2 )-lw/2;
-tmpz = data.obs( 3 )-lw/2;
+X2 = X * r;
+Y2 = Y * r;
+Z2 = Z * r;
 
-coord = coord + [ tmpx, tmpy, tmpz ];
+surf(a, X2+data.obs(1)+0.1, Y2+data.obs(2), Z2+data.obs(3), 'edgecolor', 'k', 'facecolor', 'r', 'edgealpha', 0.2, 'facealpha', 1.0 )
 
-idx = [4 8 5 1 4; 1 5 6 2 1; 2 6 7 3 2; 3 7 8 4 3; 5 8 7 6 5; 1 4 3 2 1]';
-
-xc = coord(:,1);
-yc = coord(:,2);
-zc = coord(:,3);
-patch(a, xc(idx), yc(idx), zc(idx), 'r', 'facealpha', 1.0, 'edgecolor', 'k' );
 
 fig_save( f, './images/sec521_obstacle_avoidance_example1_plot1' )
-
 %% (1J) Section 5.2.1: Obstacle avoidance, Example #1, Plot2
 
 close all
@@ -746,7 +732,7 @@ pcolor(a, X, Y, val );
 grid on
 plot( a, data.p_arr( :, 2 ), data.p_arr( :, 3 ), 'linewidth', 10, 'color', c_blue )
 plot( a, data.p0_arr( :, 2 ), data.p0_arr( :, 3 ), 'linewidth', 8, 'color', 'k', 'linestyle', ':' )
-scatter( a, data.obs( 2 ), data.obs( 3 ), 2000, 's', 'filled', 'markeredgecolor', 'k', 'markerfacecolor', 'w', 'linewidth', 6)
+scatter( a, data.obs( 2 ), data.obs( 3 ), 6000, 'o', 'filled', 'markeredgecolor', 'k', 'markerfacecolor', 'r', 'linewidth', 6)
 
 scatter( a, data.p0_arr( 1, 2 ), data.p0_arr( 1, 3 ), 300, 'o', 'filled', 'markeredgecolor', 'k', 'markerfacecolor', 'w', 'linewidth', 3 )
 text( a, data.p0_arr( 1, 2 )-0.03, data.p0_arr( 1, 3 )-0.05, 'Start', 'fontsize', 40)
@@ -767,18 +753,106 @@ fig_save( f, './images/sec521_obstacle_avoidance_example1_plot2' )
 
 close all
 
-% For visualization, we will use Explicit
 data = load( './data/sec521_obstacle_avoidance_mult.mat' );
 
-% Importing the MuJoCo iiwa14's file
-% Note that there is a model file difference between EXPLICIT
-% Loop through each file
 
 N_stl = 7;
 
 % For selecing the time step
 Np = length( data.t_arr );
 time_arr = [ 1, 3200, 3900, Np ];
+
+
+f = figure( ); 
+a = axes( 'parent', f );
+hold on; % Keep the figure open to plot the next STL file
+
+patches = cell( length( time_arr ), N_stl );
+
+for j = 1 : length( time_arr )
+    
+    step = time_arr( j );
+    
+    for i = 1:N_stl
+        % Read the STL file
+        [ vertices, faces ] = stlread( ['../models/iiwa14/meshes/link_', num2str( i ), '.stl' ] );
+
+        % Plot the STL file
+        if  i == 7
+            patches{ j, i } = patch('Vertices', vertices.Points, 'Faces', vertices.ConnectivityList, ...
+                                 'FaceColor', c_blue, 'EdgeColor', [0.0,0.0,0.0], 'FaceAlpha', 0.8, 'EdgeAlpha', 0.2 );
+        else
+            patches{ j, i } = patch('Vertices', vertices.Points, 'Faces', vertices.ConnectivityList, ...
+                                 'FaceColor', [0.8, 0.8, 0.8], 'EdgeColor', [0.0,0.0,0.0], 'FaceAlpha', 0.8, 'EdgeAlpha', 0.2 );
+        end
+
+        % Get the position for each-link and update 
+        p_tmp = squeeze( data.p_links( step , i, : ) ); 
+        R_tmp = squeeze( data.R_links( step , i, :, : ) );
+        H_tmp = [ R_tmp, p_tmp; 0,0,0,1];
+
+        hg = hgtransform( 'Matrix', H_tmp );
+        set( patches{ j, i }, 'Parent', hg);
+
+    end
+
+    % Adding the markers and also orientation
+    p_tmp = data.p_arr( step, : );
+    x = 0.1+p_tmp( 1 );
+    y =     p_tmp( 2 );
+    z =     p_tmp( 3 );
+    
+    scl = 0.05;
+    R_tmp = squeeze( data.R_arr( step , :, : ) );
+    
+    r1 = scl * R_tmp( :, 1 );
+    r2 = scl * R_tmp( :, 2 );
+    r3 = scl * R_tmp( :, 3 );
+    
+    
+    scatter3( a, x, y, z, 500, 'filled', 'markerfacecolor', 'w', 'markeredgecolor',c_blue, 'linewidth', 5 )
+    quiver3( a, x, y, z, r1( 1 ), r1( 2 ), r1( 3 ), 'linewidth', 8, 'color', 'r' )
+    quiver3( a, x, y, z, r2( 1 ), r2( 2 ), r2( 3 ), 'linewidth', 8, 'color', 'g' )
+    quiver3( a, x, y, z, r3( 1 ), r3( 2 ), r3( 3 ), 'linewidth', 8, 'color', 'b' )
+    
+end
+
+lighting gouraud
+light('Position',[1 0 0],'Style','infinite');
+% Update transformation 
+view( [ 90, 0 ] )
+plot3( a, data.p_arr(  :, 1 ), data.p_arr(  :, 2 ), data.p_arr(  :, 3 ), 'linewidth', 10, 'linestyle', '-', 'color', c_blue )
+
+r = 0.05;
+[X,Y,Z] = sphere;
+
+X2 = X * r;
+Y2 = Y * r;
+Z2 = Z * r;
+
+surf(a, X2+data.obs1(1)+0.1, Y2+data.obs1(2), Z2+data.obs1(3), 'edgecolor', 'k', 'facecolor', 'r', 'edgealpha', 0.2, 'facealpha', 1.0 )
+surf(a, X2+data.obs2(1)+0.1, Y2+data.obs2(2), Z2+data.obs2(3), 'edgecolor', 'k', 'facecolor', 'g', 'edgealpha', 0.2, 'facealpha', 1.0 )
+surf(a, X2+data.obs3(1)+0.1, Y2+data.obs3(2), Z2+data.obs3(3), 'edgecolor', 'k', 'facecolor', 'b', 'edgealpha', 0.2, 'facealpha', 1.0 )
+
+
+axis equal
+% set( a, 'xlim', [-0.2794,0.9169], 'ylim', [-0.44,0.42], 'zlim', [0,0.6121] ) 
+set( a, 'xticklabel', {}, 'yticklabel', {},'zticklabel', {} ,'visible', 'off')
+
+fig_save( f, './images/sec521_obstacle_avoidance_example2_plot1' )
+
+%% (1Ka) Section 5.2.1: Obstacle avoidance, Example #2, Plot2, Obstacle 1
+close all
+
+data = load( './data/sec521_obstacle_avoidance_mult.mat' );
+
+
+N_stl = 7;
+
+% For selecing the time step
+Np = length( data.t_arr );
+time_arr = [ 1, 3100, 3300 ];
+
 
 f = figure( ); 
 a = axes( 'parent', f );
@@ -819,7 +893,7 @@ for j = 1 : length( time_arr )
     y = p_tmp( 2 );
     z = p_tmp( 3 );
     
-    scl = 0.05;
+    scl = 0.03;
     R_tmp = squeeze( data.R_arr( step , :, : ) );
     
     r1 = scl * R_tmp( :, 1 );
@@ -836,26 +910,30 @@ end
 
 lighting gouraud
 light('Position',[1 0 0],'Style','infinite');
-
-plot3( a, data.p0_arr( :, 1 ), data.p0_arr( :, 2 ), data.p0_arr( :, 3 ), 'linewidth', 5, 'color', 'k', 'linestyle', ':' )
-plot3( a, data.p_arr(  :, 1 ), data.p_arr(  :, 2 ), data.p_arr(  :, 3 ), 'linewidth', 10, 'linestyle', '-', 'color', c_blue )
-
-
-% Drawing the level surface for the obstacle potential field
-% The Values that we want to draw
-scatter3( a, data.obs1( 1 ), data.obs1( 2 ), data.obs1( 3 ), 1000, 's', 'filled', 'markeredgecolor', 'k', 'markerfacecolor', 'w', 'linewidth', 6 )
-scatter3( a, data.obs2( 1 ), data.obs2( 2 ), data.obs2( 3 ), 1000, 's', 'filled', 'markeredgecolor', 'k', 'markerfacecolor', 'w', 'linewidth', 6 )
-scatter3( a, data.obs3( 1 ), data.obs3( 2 ), data.obs3( 3 ), 1000, 's', 'filled', 'markeredgecolor', 'k', 'markerfacecolor', 'w', 'linewidth', 6 )
-
 % Update transformation 
-view( [ 90, 0 ] )
+view( [ 73.9251, -7.9276 ] )
+plot3( a, data.p_arr(  :, 1 ), data.p_arr(  :, 2 ), data.p_arr(  :, 3 ), 'linewidth', 10, 'linestyle', '-', 'color', c_blue )
+r = 0.05;
+[X,Y,Z] = sphere;
+
+X2 = X * r;
+Y2 = Y * r;
+Z2 = Z * r;
+
+surf(a, X2+data.obs1(1), Y2+data.obs1(2), Z2+data.obs1(3), 'edgecolor', 'k', 'facecolor', 'k', 'edgealpha', 0.2, 'facealpha', 0.2 )
+surf(a, X2+data.obs2(1), Y2+data.obs2(2), Z2+data.obs2(3), 'edgecolor', 'k', 'facecolor', 'g', 'edgealpha', 0.2, 'facealpha', 1.0 )
+surf(a, X2+data.obs3(1), Y2+data.obs3(2), Z2+data.obs3(3), 'edgecolor', 'k', 'facecolor', 'k', 'edgealpha', 0.2, 'facealpha', 0.2 )
+
+
 axis equal
-set( a, 'xlim', [-0.2794,0.9169], 'ylim', [-0.44,0.42], 'zlim', [0,0.6121] ) 
+% set( a, 'xlim', [-0.2794,0.9169], 'ylim', [-0.44,0.42], 'zlim', [0,0.6121] ) 
 set( a, 'xticklabel', {}, 'yticklabel', {},'zticklabel', {} ,'visible', 'off')
+set( a, 'xlim', [0.1361, 0.7152], 'ylim', [-0.3632, 0.1724], 'zlim', [0.1022, 0.5242] )
 
-fig_save( f, './images/sec521_obstacle_avoidance_example2_plot1' )
+fig_save( f, './images/sec521_obstacle_avoidance_example2_plot1_obs1' )
 
-%% (1Ka) Section 5.2.1: Obstacle avoidance, Example #2, Plot2
+
+%% (1Ka) Section 5.2.1: Obstacle avoidance, Example #2, Plot2, Obstacle 2
 close all
 
 data = load( './data/sec521_obstacle_avoidance_mult.mat' );
@@ -865,7 +943,8 @@ N_stl = 7;
 
 % For selecing the time step
 Np = length( data.t_arr );
-time_arr = [ 3200,3400, 3400,3900 ];
+time_arr = [ 3250, 3550, 3800 ];
+
 
 f = figure( ); 
 a = axes( 'parent', f );
@@ -884,10 +963,10 @@ for j = 1 : length( time_arr )
         % Plot the STL file
         if  i == 7 
             patches{ j, i } = patch('Vertices', vertices.Points, 'Faces', vertices.ConnectivityList, ...
-                                 'FaceColor', c_blue, 'EdgeColor', [0.0,0.0,0.0], 'FaceAlpha', 0.8, 'EdgeAlpha', 0.2 );
+                                 'FaceColor', c_blue, 'EdgeColor', [0.0,0.0,0.0], 'FaceAlpha', 0.8, 'EdgeAlpha', 0.1 );
         elseif i == 6
             patches{ j, i } = patch('Vertices', vertices.Points, 'Faces', vertices.ConnectivityList, ...
-                         'FaceColor', [0.8, 0.8, 0.8], 'EdgeColor', [0.0,0.0,0.0], 'FaceAlpha', 0.8, 'EdgeAlpha', 0.2 );
+                                 'FaceColor', [0.8, 0.8, 0.8], 'EdgeColor', [0.0,0.0,0.0], 'FaceAlpha', 0.5, 'EdgeAlpha', 0.1 );            
         else
             patches{ j, i } = patch('Vertices', vertices.Points, 'Faces', vertices.ConnectivityList, ...
                                  'FaceColor', [0.8, 0.8, 0.8], 'EdgeColor', [0.0,0.0,0.0], 'FaceAlpha', 0.0, 'EdgeAlpha', 0.0 );
@@ -909,7 +988,7 @@ for j = 1 : length( time_arr )
     y = p_tmp( 2 );
     z = p_tmp( 3 );
     
-    scl = 0.05;
+    scl = 0.03;
     R_tmp = squeeze( data.R_arr( step , :, : ) );
     
     r1 = scl * R_tmp( :, 1 );
@@ -927,64 +1006,27 @@ end
 lighting gouraud
 light('Position',[1 0 0],'Style','infinite');
 % Update transformation 
-view( [ 90, 0 ] )
+view( [ 73.9251, -7.9276 ] )
 plot3( a, data.p_arr(  :, 1 ), data.p_arr(  :, 2 ), data.p_arr(  :, 3 ), 'linewidth', 10, 'linestyle', '-', 'color', c_blue )
+r = 0.05;
+[X,Y,Z] = sphere;
 
-scatter3( a, data.obs1( 1 ), data.obs1( 2 ), data.obs1( 3 ), 500, 's', 'filled', 'markeredgecolor', 'k', 'markerfacecolor', 'w', 'linewidth', 6 )
-scatter3( a, data.obs2( 1 ), data.obs2( 2 ), data.obs2( 3 ), 500, 's', 'filled', 'markeredgecolor', 'k', 'markerfacecolor', 'w', 'linewidth', 6 )
-scatter3( a, data.obs3( 1 ), data.obs3( 2 ), data.obs3( 3 ), 500, 's', 'filled', 'markeredgecolor', 'k', 'markerfacecolor', 'w', 'linewidth', 6 )
+X2 = X * r;
+Y2 = Y * r;
+Z2 = Z * r;
+
+surf(a, X2+data.obs1(1), Y2+data.obs1(2), Z2+data.obs1(3), 'edgecolor', 'k', 'facecolor', 'r', 'edgealpha', 0.2, 'facealpha', 1.0 )
+surf(a, X2+data.obs2(1), Y2+data.obs2(2), Z2+data.obs2(3), 'edgecolor', 'k', 'facecolor', 'k', 'edgealpha', 0.2, 'facealpha', 0.2 )
+surf(a, X2+data.obs3(1), Y2+data.obs3(2), Z2+data.obs3(3), 'edgecolor', 'k', 'facecolor', 'b', 'edgealpha', 0.2, 'facealpha', 1.0 )
+
 
 axis equal
 % set( a, 'xlim', [-0.2794,0.9169], 'ylim', [-0.44,0.42], 'zlim', [0,0.6121] ) 
 set( a, 'xticklabel', {}, 'yticklabel', {},'zticklabel', {} ,'visible', 'off')
+set( a, 'xlim', [0.2238    0.8590], 'ylim', [-0.2125    0.2302], 'zlim', [0.1863    0.6437], 'view', [110.8543   52.8990] )
 
+fig_save( f, './images/sec521_obstacle_avoidance_example2_plot1_obs23' )
 
-%% (1L) Section 5.2.1: Obstacle avoidance, Example #2, Plot3
-
-close all
-
-% For visualization, we will use Explicit
-data = load( './data/sec521_obstacle_avoidance_mult.mat' );
-
-f = figure( ); a = axes( 'parent', f );
-hold on; 
-
-dx = 1e-3; dy = 1e-3;
-x_arr = -0.3:dx:0.3;
-y_arr =    0:dy:0.6;
-[X, Y] = meshgrid( x_arr, y_arr );
-
-% Get the obstacle yz array
-obs1 = data.obs1( 2:3 );
-kr  = data.k_obs;       
-val1 = kr./sqrt( ( X-obs1( 1 ) ).^2 + ( Y-obs1( 2 ) ).^2 + 0.03 ).^12;
-
-obs2 = data.obs2( 2:3 );
-kr  = data.k_obs;       
-val2 = kr./sqrt( ( X-obs2( 1 ) ).^2 + ( Y-obs2( 2 ) ).^2 + 0.03 ).^12;
-
-obs3 = data.obs3( 2:3 );
-kr  = data.k_obs;       
-val3 = kr./sqrt( ( X-obs3( 1 ) ).^2 + ( Y-obs3( 2 ) ).^2 + 0.03 ).^12;
-
-pcolor(a, X, Y, val1+val2+val3 );
-plot( a, data.p_arr( :, 2 ), data.p_arr( :, 3 ), 'linewidth', 10, 'color', c_blue )
-plot( a, data.p0_arr( :, 2 ), data.p0_arr( :, 3 ), 'linewidth', 8, 'color', 'k', 'linestyle', ':' )
-scatter( a, data.obs1( 2 ), data.obs1( 3 ), 1300, 's', 'filled', 'markeredgecolor', 'k', 'markerfacecolor', 'w', 'linewidth', 3 )
-scatter( a, data.obs2( 2 ), data.obs2( 3 ), 1300, 's', 'filled', 'markeredgecolor', 'k', 'markerfacecolor', 'w', 'linewidth', 3 )
-scatter( a, data.obs3( 2 ), data.obs3( 3 ), 1300, 's', 'filled', 'markeredgecolor', 'k', 'markerfacecolor', 'w', 'linewidth', 3 )
-text( a, data.p0_arr( 1, 2 )-0.03, data.p0_arr( 1, 3 )-0.05, 'Start', 'fontsize', 40)
-text( a, data.p0_arr( end, 2 )-0.04, data.p0_arr( end, 3 )-0.05, 'Goal', 'fontsize', 40)
-
-scatter( a, data.p0_arr( 1, 2 ), data.p0_arr( 1, 3 ), 300, 'o', 'filled', 'markeredgecolor', 'k', 'markerfacecolor', 'w', 'linewidth', 3 )
-scatter( a, data.p0_arr( end, 2 ), data.p0_arr( end, 3 ), 300, 'd', 'filled', 'markeredgecolor', 'k', 'markerfacecolor', 'w', 'linewidth', 3 )
-
-shading flat; 
-colormap( 'sky' )
-axis equal
-set( a, 'xlim', [ -0.3, 0.301], 'ylim', [0,0.6], 'fontsize', 40, 'xtick', -0.3:0.3:0.3, 'ytick', 0:0.3:0.6 )
-
-fig_save( f, './images/sec521_obstacle_avoidance_example2_plot2' )
 
 %% (1N) Section 5.3.1: Contact w/ Modulation
 close all
@@ -1074,7 +1116,7 @@ X2  = X * r;
 Y2  = Y * r;
 Z2  = Z * r;
 
-surf(a, X2 + pi( 1 ),Y2 + pi(2), Z2 + pi( 3 ), 'FaceColor', [0.4940 0.1840 0.5560], 'edgecolor', 'k' )
+surf(a, X2 + pi( 1 ),Y2 + pi(2), Z2 + pi( 3 ), 'FaceColor', 'r', 'edgecolor', 'k' )
 
 % Update transformation 
 view( [ 90, 0 ] )
@@ -1095,7 +1137,7 @@ data2 = load( './data/sec531_contact_mod.mat' );
 data.t_arr  = data.t_arr - 2.0;
 data2.t_arr = data2.t_arr - 2.0;
 
-f = figure( ); a = axes( 'parent', f );
+f = figure( ); a = axes( 'parent', f);
 hold on
 
 Ene     =  data.kin_mat + data.U1_mat + data.U2_mat; 
@@ -1108,3 +1150,17 @@ yline( a, Lmax, 'linewidth', 6, 'linestyle', ':' )
 set( a, 'xlim', [ 0, 6 ], 'fontsize', 40, 'ylim', [0, 70] )
 xlabel( a, '$t$ (s)', 'fontsize', 40 )
 ylabel( a, '$L_c$ (J)', 'fontsize', 40 )
+
+yyaxis right
+plot( a, data.t_arr, data2.gain_mat, 'linewidth', 7, 'color', c_orange )
+set( a, 'ylim', [0, 1.2])
+ylabel( a, '$\lambda$ (-)', 'fontsize', 40 )
+
+
+
+ax = gca;
+
+ax.YAxis(2).Color = c_orange;
+
+
+fig_save( f, './images/sec531_contact_mod_plot2' )

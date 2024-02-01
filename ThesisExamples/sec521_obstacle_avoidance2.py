@@ -115,9 +115,9 @@ R_mat  = [ ]
 R0_mat = [ ]
 
 # Located at the middle of the movement
-obs1 = 0.5*(pi + pf) + np.array( [0.05, 0, 0.15])
+obs1 = 0.5*(pi + pf) + np.array( [0.06, 0, 0.15])
 obs2 = 0.5*(pi + pf) - np.array( [0, 0, 0.005]) - np.array( [ 0, 0.10, 0])
-obs3 = 0.5*(pi + pf) + np.array( [0, 0, 0.1]) + np.array( [ 0, 0.10, 0])
+obs3 = 0.5*(pi + pf) + np.array( [0.02, 0, 0.1]) + np.array( [ 0, 0.10, 0])
 
 # Order and Magnitude
 m = 6
@@ -130,9 +130,13 @@ id1 = model.site( COM_site ).id
 COM_site = "link6_start"
 id2 = model.site( COM_site ).id
 
+COM_site = "link6_COM2"
+id3 = model.site( COM_site ).id
+
 # Saving the references 
 p1  = data.site_xpos[ id1 ]
 p2  = data.site_xpos[ id2 ]
+p3  = data.site_xpos[ id3 ]
 
 while data.time <= T:
 
@@ -175,9 +179,9 @@ while data.time <= T:
     n_hat2 = ( p-obs2 )/np.linalg.norm( p-obs2 )
     n_hat3 = ( p-obs3 )/np.linalg.norm( p-obs3 )
 
-    tau_imp4 = ( k_obs * m/np.linalg.norm( p-obs1 )**(m+1) ) * Jp.T @ n_hat1
-    tau_imp5 = ( k_obs * m/np.linalg.norm( p-obs2 )**(m+1) ) * Jp.T @ n_hat2
-    tau_imp6 = ( k_obs * m/np.linalg.norm( p-obs3 )**(m+1) ) * Jp.T @ n_hat3
+    tau_imp4 = 10*( k_obs * m/np.linalg.norm( p-obs1 )**(m+1) ) * Jp.T @ n_hat1
+    tau_imp5 = 10*( k_obs * m/np.linalg.norm( p-obs2 )**(m+1) ) * Jp.T @ n_hat2
+    tau_imp6 = 10*( k_obs * m/np.linalg.norm( p-obs3 )**(m+1) ) * Jp.T @ n_hat3
 
     # Other points of the robot
     n_hat1 = ( p1-obs1 )/np.linalg.norm( p1-obs1 )
@@ -197,10 +201,20 @@ while data.time <= T:
     tau_imp11 = 10*( k_obs * m/np.linalg.norm( p2-obs2 )**(m+1) ) * Jp.T @ n_hat2    
     tau_imp12 = 10*( k_obs * m/np.linalg.norm( p2-obs3 )**(m+1) ) * Jp.T @ n_hat3    
 
+    # Other points of the robot
+    n_hat1 = ( p3-obs1 )/np.linalg.norm( p3-obs1 )
+    n_hat2 = ( p3-obs2 )/np.linalg.norm( p3-obs2 )
+    n_hat3 = ( p3-obs3 )/np.linalg.norm( p2-obs3 )
+
+    tau_imp13 = 10*( k_obs * m/np.linalg.norm( p3-obs1 )**(m+1) ) * Jp.T @ n_hat1
+    tau_imp14 = 10*( k_obs * m/np.linalg.norm( p3-obs2 )**(m+1) ) * Jp.T @ n_hat2    
+    tau_imp15 = 10*( k_obs * m/np.linalg.norm( p3-obs3 )**(m+1) ) * Jp.T @ n_hat3    
+
+
 
     # Adding the Torque
     data.ctrl[ : ] = tau_imp1 + tau_imp2 + tau_imp3 +  tau_imp4 +  tau_imp5 +  tau_imp6 \
-                   + tau_imp7 + tau_imp8 + tau_imp9 + tau_imp10 + tau_imp11 + tau_imp12
+                   + tau_imp7 + tau_imp8 + tau_imp9 + tau_imp10 + tau_imp11 + tau_imp12+ tau_imp13 + tau_imp14 + tau_imp15
 
     # Update Visualization
     if ( ( n_frames != ( data.time // t_update ) ) and is_view ):
