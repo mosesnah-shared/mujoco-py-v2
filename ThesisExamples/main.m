@@ -741,8 +741,8 @@ text( a, data.p0_arr( end, 2 )-0.04, data.p0_arr( end, 3 )-0.05, 'Goal', 'fontsi
 shading flat; 
 axis equal
 set( a, 'xlim', [ -0.3, 0.301], 'ylim', [0,0.6], 'fontsize', 40, 'xtick', -0.3:0.3:0.3, 'ytick', 0:0.3:0.6 )
-xlabel( '$X$ (m)', 'fontsize', 40 )
-ylabel( '$Y$ (m)', 'fontsize', 40 )
+xlabel( '$Y$ (m)', 'fontsize', 40 )
+ylabel( '$Z$ (m)', 'fontsize', 40 )
 colormap( 'sky' )
 
 
@@ -1149,7 +1149,7 @@ Lmax = 10;
 yline( a, Lmax, 'linewidth', 6, 'linestyle', ':' )
 set( a, 'xlim', [ 0, 6 ], 'fontsize', 40, 'ylim', [0, 70] )
 xlabel( a, '$t$ (s)', 'fontsize', 40 )
-ylabel( a, '$L_c$ (J)', 'fontsize', 40 )
+ylabel( a, '$\mathcal{L}_{c}$ (J)', 'fontsize', 40 )
 
 yyaxis right
 plot( a, data.t_arr, data2.gain_mat, 'linewidth', 7, 'color', c_orange )
