@@ -40,7 +40,7 @@ assert( dt <= t_update and dt <= t_save )
 # The number of degrees of freedom
 nq = model.nq
 
-q1 = np.pi * 1/12
+q1 = np.pi * 1/3
 q_init = np.array( [ q1, np.pi-2*q1 ] )
 data.qpos[ 0:nq ] = q_init
 mujoco.mj_forward( model, data )
@@ -69,7 +69,7 @@ dp = Jp @ dq
 # Get the initial position of the robot's end-effector
 # and also the other parameters
 pi = np.copy( p )
-pf = pi + np.array( [ 0.0, 2.0-pi[ 1 ]+0.1, 0.0 ] )
+pf = pi + np.array( [ 0.0, 2.0-pi[ 1 ], 0.0 ] )
 t0 = 0.3
 D  = 1.0
 
@@ -85,14 +85,41 @@ p0_mat  = [ ]
 dq_mat  = [ ] 
 dp_mat  = [ ] 
 dp0_mat = [ ] 
+q0_mat  = [ ] 
 Jp_mat  = [ ]
 
+# Stable joint posture 
+q0_L = np.array( [ 0.8 *np.pi, -0.6*np.pi ] )
+q0_R = np.array( [ 0.2 *np.pi, np.pi-2*0.2*np.pi ] )
+
+kq = 2
+
+def is_singular_with_svd(matrix, threshold=1e-10):
+    _, s, _ = np.linalg.svd(matrix)
+    return np.min(s) < threshold
+
+is_left  = False
+is_right = False
+gain = 0.0
+gain_mat = []
+
+stp = 0.005
 
 while data.time <= T:
 
     mujoco.mj_step( model, data )
-    p0, dp0, _ = min_jerk_traj( data.time, t0, t0 + D, pi, pf )
-    
+    p01, dp01, _ = min_jerk_traj( data.time, t0    , t0 + 1*D, pi, pf )
+    p02, dp02, _ = min_jerk_traj( data.time, t0 + D, t0 + 2*D, np.zeros( 3 ), pi-pf )
+
+    p03, dp03, _ = min_jerk_traj( data.time, t0 + 2*D, t0 + 3*D, np.zeros( 3 ), pf-pi )
+    p04, dp04, _ = min_jerk_traj( data.time, t0 + 3*D, t0 + 4*D, np.zeros( 3 ), pi-pf )
+
+    p05, dp05, _ = min_jerk_traj( data.time, t0 + 4*D, t0 + 5*D, np.zeros( 3 ), pf-pi )
+    p06, dp06, _ = min_jerk_traj( data.time, t0 + 5*D, t0 + 6*D, np.zeros( 3 ), pi-pf )
+
+    p0  =  p01 +  p02 +  p03 +  p04 +  p05 +  p06
+    dp0 = dp01 + dp02 + dp03 + dp04 + dp05 + dp06
+
     # Torque 1: First-order Joint-space Impedance Controller
     mujoco.mj_jacSite( model, data, Jp, Jr, id_EE )
 
@@ -100,8 +127,42 @@ while data.time <= T:
 
     tau_imp = Jp.T @ ( Kp @ ( p0 - p ) + Bp @ ( dp0 - dp ) )
 
+    # If singularity management is on
+    if is_sing:
+        
+        if data.time >= t0 + 1.0*D and data.time <= t0 + 2.0*D:
+            q0 = q0_R
+            gain = gain + stp if gain < 1.0 else 1.0
+
+        elif data.time >= t0 + 2.0*D and data.time <= t0 + 3.0*D:
+            gain = gain - stp if gain > 0.0 else 0.0
+
+        elif data.time >= t0 + 3.0*D and data.time <= t0 + 4.0*D:
+            q0 = q0_R
+            gain = gain + stp if gain < 1.0 else 1.0
+
+        elif data.time >= t0 + 4.0*D and data.time <= t0 + 5.0*D:
+            gain = gain - stp if gain > 0.0 else 0.0
+
+        elif data.time >= t0 + 5.0*D and data.time <= t0 + 6.0*D:
+            q0 = q0_R
+            gain = gain + stp if gain < 1.0 else 1.0
+
+        elif data.time >= t0 + 6.0*D:
+            q0 = q0_R
+
+        else:
+            q0 = np.zeros( model.nq )
+            gain = 0
+
+        tau_sing = gain* ( kq * ( q0 - q ) )
+
+    else:
+        tau_sing = np.zeros( model.nq )
+
+
     # Adding the Torque
-    data.ctrl[ : ] = tau_imp
+    data.ctrl[ : ] = tau_imp + tau_sing
 
     # Update Visualization
     if ( ( n_frames != ( data.time // t_update ) ) and is_view ):
@@ -121,12 +182,15 @@ while data.time <= T:
         dp_mat.append(  np.copy( dp  ) )
         dp0_mat.append( np.copy( dp0 ) )    
         Jp_mat.append(  np.copy(  Jp ) )
+        gain_mat.append( gain )
+        q0_mat.append( q0 )        
 
 # Saving the data
 if is_save:
-    data_dic = { "t_arr": t_mat, "q_arr": q_mat, "p_arr": p_mat, "dp_arr": dp_mat,
-                 "p0_arr": p0_mat, "dq_arr": dq_mat, "dp0_arr": dp0_mat, "Kp": Kp, "Bq": Bp, "Jp_arr": Jp_mat }
-    savemat( "./ThesisExamples/data/sec512_task_sing.mat", data_dic )
+    data_dic = { "t_arr": t_mat, "q_arr": q_mat, "p_arr": p_mat, "dp_arr": dp_mat, "q0_arr": q0_mat,
+                 "p0_arr": p0_mat, "dq_arr": dq_mat, "dp0_arr": dp0_mat, "Kp": Kp, "Bq": Bp, "q0_L": q0_L, "q0_R":q0_R, "Jp_arr": Jp_mat, "Kq": kq, "gain":gain_mat }
+    
+    savemat( "./ThesisExamples/data/sec512_task_sing_RRR.mat", data_dic )
 
 if is_view:            
     viewer.close()

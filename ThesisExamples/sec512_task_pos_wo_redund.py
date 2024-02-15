@@ -24,7 +24,7 @@ np.set_printoptions( precision = 4, threshold = 9, suppress = True )
 T        = 3.                       # Total Simulation Time
 dt       = model.opt.timestep       # Time-step for the simulation (set in xml file)
 fps      = 30                       # Frames per second
-save_ps  = 100                      # Saving point per second
+save_ps  = 1000                     # Saving point per second
 n_frames = 0                        # The current frame of the simulation
 n_saves  = 0                        # Update for the saving point
 speed    = 1.0                      # The speed of the simulator
