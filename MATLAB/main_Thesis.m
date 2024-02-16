@@ -5,7 +5,6 @@
 % [Emails]         Moses C. Nah   : mosesnah@mit.edu
 
 %% (--) INITIALIZATION
-
 clear; close all; clc; workspace;
 
 %% ==================================================================
@@ -680,6 +679,8 @@ data = load( dir );
 
 mk = 2000;
 
+c_tmp = [0 0.4470 0.7410];
+
 [ N, ~ ] = size( data.q_arr );
 dt = data.t_arr( 2 ) -  data.t_arr( 1 );
 t_arr = dt * (0:(N-1));
@@ -708,17 +709,17 @@ f = figure( );
 a = subplot( 2, 2, [1,3] );
 hold on
 
-alpha = 0.3;
+alpha = 0.5;
+g0robot = plot( a, x0_arr( 1, : ), y0_arr( 1, : ), 'linewidth', 10, 'color', [ c_tmp, alpha] );
 grobot  = plot( a, x_arr( 1, : ), y_arr( 1, : ), 'linewidth', 10, 'color', 'k' );
-g0robot = plot( a, x0_arr( 1, : ), y0_arr( 1, : ), 'linewidth', 10, 'color', [ 0, 0, 0, alpha] );
 
 % Virtual Elbow and End-effector
 pEL0 = [ x0_arr( :, 2 ), y0_arr( :, 2 ) ];
 pEE0 = [ x0_arr( :, 3 ), y0_arr( :, 3 ) ];
 
-gSH0 = scatter( a, 0, 0, mk, 'o', 'filled', 'markerfacecolor', 'w', 'markeredgecolor', 'k', 'linewidth', 4 );
-gEL0 = scatter( a, pEL0( 1, 1 ), pEL0( 1, 2 ), mk, 'o', 'filled', 'markerfacecolor', 'w', 'markeredgecolor', 'k', 'linewidth', 4,'markeredgealpha', alpha );
-gEE0 = scatter( a, pEE0( 1, 1 ), pEE0( 1, 2 ), mk, 'o', 'filled', 'markerfacecolor', 'w', 'markeredgecolor', 'k', 'linewidth', 4,'markeredgealpha', alpha );
+gSH0 = scatter( a, 0, 0, mk, 'o', 'filled', 'markerfacecolor', 'w', 'markeredgecolor', c_tmp, 'linewidth', 4 );
+gEL0 = scatter( a, pEL0( 1, 1 ), pEL0( 1, 2 ), mk, 'o', 'filled', 'markerfacecolor', 'w', 'markeredgecolor', c_tmp, 'linewidth', 4,'markeredgealpha', alpha );
+gEE0 = scatter( a, pEE0( 1, 1 ), pEE0( 1, 2 ), mk, 'o', 'filled', 'markerfacecolor', 'w', 'markeredgecolor', c_tmp, 'linewidth', 4,'markeredgealpha', alpha );
 
 % Elbow and End-effector
 pEL = [ x_arr( :, 2 ), y_arr( :, 2 ) ];
@@ -732,15 +733,15 @@ axis equal
 set( a, 'xlim', [-0.5, 2.5], 'ylim',[-0.4,2.6], 'xticklabel', {}, 'yticklabel', {})
 
 T_min = 0.0;
-T_max = 3.0;
+T_max = 2.5;
 
 % The joint-angle
 a1 = subplot( 2, 2, 2 ); set( a1, 'parent', f)
 hold on
-plot( a1, data.t_arr, data.q_arr( :, 1 ), 'color', 'k', 'linestyle', '-', 'linewidth', 10 )
-plot( a1, data.t_arr, data.q0_arr( :, 1 ), 'color', 'k', 'linestyle', ':', 'linewidth', 10 )
+plot( a1, data.t_arr, data.q_arr( :, 1 ), 'color', 'k', 'linestyle', '-', 'linewidth', 5 )
+plot( a1, data.t_arr, data.q0_arr( :, 1 ), 'color', c_tmp, 'linestyle', ':', 'linewidth', 10 )
 p1a = scatter( a1, data.t_arr( 1 ), data.q_arr( 1, 1 ), 0.4*mk, 'o', 'filled', 'markerfacecolor', 'w', 'markeredgecolor', 'k', 'linewidth', 3  );
-p1b = scatter( a1, data.t_arr( 1 ), data.q0_arr( 1, 1 ), 0.2*mk, 'o', 'filled', 'markerfacecolor', 'w', 'markeredgecolor', 'k', 'linewidth', 2  );
+p1b = scatter( a1, data.t_arr( 1 ), data.q0_arr( 1, 1 ), 0.2*mk, 'o', 'filled', 'markerfacecolor', c_tmp, 'markeredgecolor', 'k', 'linewidth', 2  );
 axis equal
 set( a1, 'xlim', [0, T_max], 'ylim', [-0.1, 1.5],'fontsize', 30 )
 ylabel( a1, '$q_1(t)$ (rad)', 'fontsize', 40 )
@@ -748,10 +749,10 @@ ylabel( a1, '$q_1(t)$ (rad)', 'fontsize', 40 )
 % The joint-angle
 a2 = subplot( 2, 2, 4 ); set( a2, 'parent', f)
 hold on
-plot( a2, data.t_arr, data.q_arr( :, 2 ), 'color', 'k', 'linestyle', '-', 'linewidth', 10 )
-plot( a2, data.t_arr, data.q0_arr( :, 2 ), 'color', 'k', 'linestyle', ':', 'linewidth', 10 )
+plot( a2, data.t_arr, data.q_arr( :, 2 ), 'color', 'k', 'linestyle', '-', 'linewidth', 5 )
+plot( a2, data.t_arr, data.q0_arr( :, 2 ), 'color', c_tmp, 'linestyle', ':', 'linewidth', 10 )
 p2a = scatter( a2, data.t_arr( 1 ), data.q_arr( 1, 2 ), 0.4*mk, 'o', 'filled', 'markerfacecolor', 'w', 'markeredgecolor', 'k', 'linewidth', 3 );
-p2b = scatter( a2, data.t_arr( 1 ), data.q0_arr( 1, 2 ), 0.2*mk, 'o', 'filled', 'markerfacecolor', 'w', 'markeredgecolor', 'k', 'linewidth', 2  );
+p2b = scatter( a2, data.t_arr( 1 ), data.q0_arr( 1, 2 ), 0.2*mk, 'o', 'filled', 'markerfacecolor', c_tmp, 'markeredgecolor', 'k', 'linewidth', 2  );
 axis equal
 set( a2, 'xlim', [0, T_max], 'ylim', [-0.1, 1.5],'fontsize', 30 )
 ylabel( a2, '$q_2(t)$ (rad)', 'fontsize', 40 )
@@ -827,6 +828,7 @@ close( f );
 dir = "C:\Users\moses\OneDrive\Documents\GitHub\mujoco-py-v2\ThesisExamples\data\sec512_task.mat";
 data = load( dir );
 
+c_tmp = [0.6350 0.0780 0.1840];
 mk = 2000;
 
 [ N, ~ ] = size( data.q_arr );
@@ -872,28 +874,28 @@ T_min = 0.0;
 T_max = 2.5;
 
 % The desired end-effector position
-gEE0 = scatter( a, data.p0_arr( 1, 1 ), data.p0_arr( 1, 2 ), 0.3*mk, 'o', 'filled', 'markerfacecolor', 'w', 'markeredgecolor', 'k', 'linewidth', 4 );
+gEE0 = scatter( a, data.p0_arr( 1, 1 ), data.p0_arr( 1, 2 ), 0.3*mk, 'o', 'filled', 'markerfacecolor', c_tmp , 'markeredgecolor', 'k', 'linewidth', 4 );
 
 
 % The joint-angle
 a1 = subplot( 2, 2, 2 ); set( a1, 'parent', f)
 hold on
-plot( a1, data.t_arr, data.p_arr( :, 1 ), 'color', 'k', 'linestyle', '-', 'linewidth', 10 )
-plot( a1, data.t_arr, data.p0_arr( :, 1 ), 'color', 'k', 'linestyle', ':', 'linewidth', 10 )
+plot( a1, data.t_arr, data.p_arr( :, 1 ), 'color', 'k', 'linestyle', '-', 'linewidth', 5 )
+plot( a1, data.t_arr, data.p0_arr( :, 1 ), 'color', c_tmp , 'linestyle', ':', 'linewidth', 10 )
 p1a = scatter( a1, data.t_arr( 1 ), data.p_arr( 1, 1 ), 0.4*mk, 'o', 'filled', 'markerfacecolor', 'w', 'markeredgecolor', 'k', 'linewidth', 3  );
-p1b = scatter( a1, data.t_arr( 1 ), data.p0_arr( 1, 1 ), 0.2*mk, 'o', 'filled', 'markerfacecolor', 'w', 'markeredgecolor', 'k', 'linewidth', 2  );
+p1b = scatter( a1, data.t_arr( 1 ), data.p0_arr( 1, 1 ), 0.2*mk, 'o', 'filled', 'markerfacecolor',c_tmp , 'markeredgecolor', 'k', 'linewidth', 2  );
 set( a1, 'xlim', [0, T_max+0.01], 'ylim', [-1.0, 1.0],'fontsize', 30 )
-ylabel( a1, '$p_x(t)$ (rad)', 'fontsize', 40 )
+ylabel( a1, '$p_x(t)$ (m)', 'fontsize', 40 )
 
 % The joint-angle
 a2 = subplot( 2, 2, 4 ); set( a2, 'parent', f)
 hold on
-plot( a2, data.t_arr, data.p_arr( :, 2 ), 'color', 'k', 'linestyle', '-', 'linewidth', 10 )
-plot( a2, data.t_arr, data.p0_arr( :, 2 ), 'color', 'k', 'linestyle', ':', 'linewidth', 10 )
+plot( a2, data.t_arr, data.p_arr( :, 2 ), 'color', 'k', 'linestyle', '-', 'linewidth', 5 )
+plot( a2, data.t_arr, data.p0_arr( :, 2 ), 'color', c_tmp , 'linestyle', ':', 'linewidth', 10 )
 p2a = scatter( a2, data.t_arr( 1 ), data.p_arr( 1, 2 ), 0.4*mk, 'o', 'filled', 'markerfacecolor', 'w', 'markeredgecolor', 'k', 'linewidth', 3 );
-p2b = scatter( a2, data.t_arr( 1 ), data.p0_arr( 1, 2 ), 0.2*mk, 'o', 'filled', 'markerfacecolor', 'w', 'markeredgecolor', 'k', 'linewidth', 2  );
+p2b = scatter( a2, data.t_arr( 1 ), data.p0_arr( 1, 2 ), 0.2*mk, 'o', 'filled', 'markerfacecolor', c_tmp , 'markeredgecolor', 'k', 'linewidth', 2  );
 set( a2, 'xlim', [0, T_max+0.01], 'ylim', [ 0.3, 2.3],'fontsize', 30 )
-ylabel( a2, '$p_y(t)$ (rad)', 'fontsize', 40 )
+ylabel( a2, '$p_y(t)$ (m)', 'fontsize', 40 )
 xlabel( a2, '$t$ (sec)', 'fontsize', 40 )
 
 % Plotting the robot 
@@ -959,6 +961,7 @@ close all
 % The absolute location of the data
 dir = "C:\Users\moses\OneDrive\Documents\GitHub\mujoco-py-v2\ThesisExamples\data\sec512_task_sing.mat";
 data = load( dir );
+c_tmp = [0.6350 0.0780 0.1840];
 
 mk = 2000;
 
@@ -1017,7 +1020,7 @@ ylabel( a, '$Y$ (m)', 'fontsize', 40 )
 alpha = 0.3;
 
 % The desired end-effector position
-gEE0 = scatter( a, data.p0_arr( 1, 1 ), data.p0_arr( 1, 2 ), 0.3*mk, 'o', 'filled', 'markerfacecolor', 'w', 'markeredgecolor', 'k', 'linewidth', 4 );
+gEE0 = scatter( a, data.p0_arr( 1, 1 ), data.p0_arr( 1, 2 ), 0.3*mk, 'o', 'filled', 'markerfacecolor', c_tmp, 'markeredgecolor', 'k', 'linewidth', 4 );
 
 
 
@@ -1097,7 +1100,7 @@ numFrames    = round( T*outputVideo.FrameRate*1.5);
 timePerFrame = T / numFrames;
 
 T_min = 0.0;
-T_max = 8.0;
+T_max = 5.0;
 
 for frameIdx = 1:numFrames
 
@@ -1170,13 +1173,16 @@ close( f );
 
 % There are multiple types of movements that were produced.
 % Two types exist: RRR or RLR
-idx = 2;
+idx = 1;
 assert( ismember( idx, [1,2] ) )
 if idx == 1
     dir = "C:\Users\moses\OneDrive\Documents\GitHub\mujoco-py-v2\ThesisExamples\data\sec512_task_sing_RRR.mat";
 elseif idx == 2
     dir = "C:\Users\moses\OneDrive\Documents\GitHub\mujoco-py-v2\ThesisExamples\data\sec512_task_sing_RLR.mat";
 end
+
+c_tmp1 = [0.6350 0.0780 0.1840];
+c_tmp2 = [0.0000 0.4470 0.7410];
 
 data = load( dir );
 
@@ -1212,13 +1218,13 @@ y0_arr = cumsum( sin( q0_abs ), 2 );
 x0_arr = [ zeros( N, 1 ), x0_arr ];
 y0_arr = [ zeros( N, 1 ), y0_arr ];
 
-g0robot = plot( a, x0_arr( 1, : ), y0_arr( 1, : ), 'linewidth', 10, 'color', 'k' );
+g0robot = plot( a, x0_arr( 1, : ), y0_arr( 1, : ), 'linewidth', 5, 'color', c_tmp2 );
 g0robot.Color( 4 ) = data.gain( 1 );
 
 pEL0 = [ x0_arr( :, 2 ), y0_arr( :, 2 ) ];
 pEE0 = [ x0_arr( :, 3 ), y0_arr( :, 3 ) ];
-gEL0 = scatter( a, pEL0( 1, 1 ), pEL0( 1, 2 ), mk, 'o', 'filled', 'markerfacecolor', 'w', 'markeredgecolor', 'k', 'linewidth', 4 );
-gEE01 = scatter( a, pEE0( 1, 1 ), pEE0( 1, 2 ), mk, 'o', 'filled', 'markerfacecolor', 'w', 'markeredgecolor', 'k', 'linewidth', 4 );
+gEL0 = scatter( a, pEL0( 1, 1 ), pEL0( 1, 2 ), mk, 'o', 'filled', 'markerfacecolor', 'w', 'markeredgecolor', c_tmp2, 'linewidth', 4 );
+gEE01 = scatter( a, pEE0( 1, 1 ), pEE0( 1, 2 ), mk, 'o', 'filled', 'markerfacecolor', 'w', 'markeredgecolor', c_tmp2, 'linewidth', 4 );
 
 % Plotting the color map on the R2 space
 Ntmp2 = 200;
@@ -1252,7 +1258,7 @@ ylabel( a, '$Y$ (m)', 'fontsize', 40 )
 alpha = 0.3;
 
 % The desired end-effector position
-gEE0 = scatter( a, data.p0_arr( 1, 1 ), data.p0_arr( 1, 2 ), 0.3*mk, 'o', 'filled', 'markerfacecolor', 'w', 'markeredgecolor', 'k', 'linewidth', 4 );
+gEE0 = scatter( a, data.p0_arr( 1, 1 ), data.p0_arr( 1, 2 ), 0.3*mk, 'o', 'filled', 'markerfacecolor', c_tmp1, 'markeredgecolor', 'k', 'linewidth', 4 );
 
 a1 = subplot( 2, 2, 4 );
 hold on
@@ -1436,6 +1442,8 @@ dir = "C:\Users\moses\OneDrive\Documents\GitHub\mujoco-py-v2\ThesisExamples\data
 data = load( dir );
 
 mk = 2000;
+c_tmp = [0.6350 0.0780 0.1840];
+
 
 [ N, ~ ] = size( data.q_arr );
 dt = data.t_arr( 2 ) -  data.t_arr( 1 );
@@ -1456,7 +1464,7 @@ f = figure( );
 a = subplot( 2, 2, [1,3] );
 hold on
 
-plot( a, data.p0_arr( :, 1 ), data.p0_arr( :, 2 ), 'linewidth', 4, 'color', 'k', 'linestyle', '--' )
+plot( a, data.p0_arr( :, 1 ), data.p0_arr( :, 2 ), 'linewidth', 6, 'color', 'k', 'linestyle', ':' )
 scatter( a, data.p0_arr( 1, 1 ), data.p0_arr( 1, 2 ), 0.3*mk, 'o', 'filled', 'markerfacecolor', 'w', 'markeredgecolor', 'k', 'linewidth', 4 );
 scatter( a, data.p0_arr( end, 1 ), data.p0_arr( end, 2 ), 0.3*mk, 'd', 'filled', 'markerfacecolor', 'w', 'markeredgecolor', 'k', 'linewidth', 4 );
 
@@ -1470,44 +1478,44 @@ for i = 1: nDOF
 end
 
 axis equal
-set( a, 'xlim', [-1, 3.5], 'ylim',[-0.4,4.1], 'xticklabel', {}, 'yticklabel', {})
+set( a, 'xlim', [-1.5, 3.5], 'ylim',[-0.4,4.6], 'xticklabel', {}, 'yticklabel', {})
 xlabel( a, '$X$ (m)', 'fontsize', 40 )
 ylabel( a, '$Y$ (m)', 'fontsize', 40 )
 
 alpha = 0.3;
 
 T_min = 0.0;
-T_max = 4.5;
+T_max = 3.;
 
 % The desired end-effector position
-gEE0 = scatter( a, data.p0_arr( 1, 1 ), data.p0_arr( 1, 2 ), 0.3*mk, 'o', 'filled', 'markerfacecolor', 'w', 'markeredgecolor', 'k', 'linewidth', 4 );
+gEE0 = scatter( a, data.p0_arr( 1, 1 ), data.p0_arr( 1, 2 ), 0.3*mk, 'o', 'filled', 'markerfacecolor', c_tmp, 'markeredgecolor', 'k', 'linewidth', 4 );
 
 
 % The joint-angle
 a1 = subplot( 2, 2, 2 ); set( a1, 'parent', f)
 hold on
-plot( a1, data.t_arr, data.p_arr( :, 1 ), 'color', 'k', 'linestyle', '-', 'linewidth', 10 )
-plot( a1, data.t_arr, data.p0_arr( :, 1 ), 'color', 'k', 'linestyle', ':', 'linewidth', 10 )
+plot( a1, data.t_arr, data.p_arr( :, 1 ), 'color', 'k', 'linestyle', '-', 'linewidth', 5 )
+plot( a1, data.t_arr, data.p0_arr( :, 1 ), 'color', c_tmp, 'linestyle', ':', 'linewidth', 10 )
 p1a = scatter( a1, data.t_arr( 1 ), data.p_arr( 1, 1 ), 0.4*mk, 'o', 'filled', 'markerfacecolor', 'w', 'markeredgecolor', 'k', 'linewidth', 3  );
-p1b = scatter( a1, data.t_arr( 1 ), data.p0_arr( 1, 1 ), 0.2*mk, 'o', 'filled', 'markerfacecolor', 'w', 'markeredgecolor', 'k', 'linewidth', 2  );
-set( a1, 'xlim', [0, T_max+0.01], 'ylim', [-0.5, 3.5],'fontsize', 30 )
-ylabel( a1, '$p_x(t)$ (rad)', 'fontsize', 40 )
+p1b = scatter( a1, data.t_arr( 1 ), data.p0_arr( 1, 1 ), 0.2*mk, 'o', 'filled', 'markerfacecolor', c_tmp, 'markeredgecolor', 'k', 'linewidth', 2  );
+set( a1, 'xlim', [0, T_max+0.01], 'ylim', [-1.5, 3.5],'fontsize', 30 )
+ylabel( a1, '$p_x(t)$ (m)', 'fontsize', 40 )
 
 % The joint-angle
 a2 = subplot( 2, 2, 4 ); set( a2, 'parent', f)
 hold on
-plot( a2, data.t_arr, data.p_arr( :, 2 ), 'color', 'k', 'linestyle', '-', 'linewidth', 10 )
-plot( a2, data.t_arr, data.p0_arr( :, 2 ), 'color', 'k', 'linestyle', ':', 'linewidth', 10 )
+plot( a2, data.t_arr, data.p_arr( :, 2 ), 'color', 'k', 'linestyle', '-', 'linewidth', 5 )
+plot( a2, data.t_arr, data.p0_arr( :, 2 ), 'color', c_tmp, 'linestyle', ':', 'linewidth', 10 )
 p2a = scatter( a2, data.t_arr( 1 ), data.p_arr( 1, 2 ), 0.4*mk, 'o', 'filled', 'markerfacecolor', 'w', 'markeredgecolor', 'k', 'linewidth', 3 );
-p2b = scatter( a2, data.t_arr( 1 ), data.p0_arr( 1, 2 ), 0.2*mk, 'o', 'filled', 'markerfacecolor', 'w', 'markeredgecolor', 'k', 'linewidth', 2  );
-set( a2, 'xlim', [0, T_max+0.01], 'ylim', [ 0.3, 4.3],'fontsize', 30 )
-ylabel( a2, '$p_y(t)$ (rad)', 'fontsize', 40 )
+p2b = scatter( a2, data.t_arr( 1 ), data.p0_arr( 1, 2 ), 0.2*mk, 'o', 'filled', 'markerfacecolor', c_tmp, 'markeredgecolor', 'k', 'linewidth', 2  );
+set( a2, 'xlim', [0, T_max+0.01], 'ylim', [ 2, 4],'fontsize', 30 )
+ylabel( a2, '$p_y(t)$ (m)', 'fontsize', 40 )
 xlabel( a2, '$t$ (sec)', 'fontsize', 40 )
 
 % Plotting the robot 
 % Set up the video writer
-delete('videos/task_space_movements.mp4'  )
-outputVideo = VideoWriter( 'videos/task_space_movements.mp4', 'MPEG-4' );
+delete('videos/task_space_redundancy.mp4'  )
+outputVideo = VideoWriter( 'videos/task_space_redundancy.mp4', 'MPEG-4' );
 outputVideo.FrameRate = 60;
 open( outputVideo );
 
@@ -1563,32 +1571,357 @@ close( outputVideo );
 % Optionally, close the figure
 close( f );
 
+
+%% ---- (1e-a) For Task-space Position, Redundancy, Singularity
+
+dir = "C:\Users\moses\OneDrive\Documents\GitHub\mujoco-py-v2\ThesisExamples\data\sec513_task_redunt_sing.mat";
+data = load( dir );
+
+mk = 2000;
+c_tmp1 = [0.6350 0.0780 0.1840];
+c_tmp2 = [0.0000 0.4470 0.7410];
+
+
+[ N, ~ ] = size( data.q_arr );
+dt = data.t_arr( 2 ) -  data.t_arr( 1 );
+t_arr = dt * (0:(N-1));
+T = max( data.t_arr );
+
+% The actual Robot Locations
+q_abs  = cumsum( data.q_arr, 2 );
+x_arr = cumsum( cos( q_abs ), 2 );
+y_arr = cumsum( sin( q_abs ), 2 );
+
+% Adding the zeros
+x_arr = [ zeros( N, 1 ), x_arr ];
+y_arr = [ zeros( N, 1 ), y_arr ];
+
+% The virtual robot
+
+q0_abs  = cumsum( data.q0_arr, 2 );
+x0_arr = cumsum( cos( q0_abs ), 2 );
+y0_arr = cumsum( sin( q0_abs ), 2 );
+
+% Adding the zeros
+x0_arr = [ zeros( N, 1 ), x0_arr ];
+y0_arr = [ zeros( N, 1 ), y0_arr ];
+
+% Getting the robot's end-effector, elbow and 
+f = figure( );  a = axes( 'parent', f );
+hold on
+
+g0robot = plot( a, x0_arr( 1, : ), y0_arr( 1, : ), 'linewidth', 5, 'color', c_tmp2 );
+g0robot.Color( 4 ) = data.gain( 1 );
+grobot  = plot( a, x_arr( 1, : ), y_arr( 1, : ), 'linewidth', 10, 'color', 'k' );
+g0markers = cell( 1, nDOF );
+for i = 1: nDOF
+    g0markers{ i }= scatter( a, x0_arr( 1, i ), y0_arr( 1, i ), mk, 'o', 'filled', 'markerfacecolor', 'w', 'markeredgecolor', c_tmp2, 'linewidth', 4, 'markerfacealpha', 0, 'markeredgealpha', 0 );
+end
+% Getting the number of markers
+nDOF = length( x_arr(1, : ));
+gmarkers = cell( 1, nDOF );
+for i = 1: nDOF
+    gmarkers{ i }= scatter( a, x_arr( 1, i ), y_arr( 1, i ), mk, 'o', 'filled', 'markerfacecolor', 'w', 'markeredgecolor', 'k', 'linewidth', 4 );
+end
+
+
+
+axis equal
+set( a, 'xlim', [-3.0, 3.0], 'ylim',[-0.4,5.6], 'xticklabel', {}, 'yticklabel', {})
+xlabel( a, '$X$ (m)', 'fontsize', 40 )
+ylabel( a, '$Y$ (m)', 'fontsize', 40 )
+
+alpha = 0.3;
+
+T_min = 0.0;
+T_max = 10.0;   
+
+% The desired end-effector position
+gEE0 = scatter( a, data.p0_arr( 1, 1 ), data.p0_arr( 1, 2 ), 0.3*mk, 'o', 'filled', 'markerfacecolor', c_tmp1, 'markeredgecolor', 'k', 'linewidth', 4 );
+
+% Plotting the robot 
+% Set up the video writer
+delete('videos/task_space_redundancy_sing.mp4'  )
+outputVideo = VideoWriter( 'videos/task_space_redundancy_sing.mp4', 'MPEG-4' );
+outputVideo.FrameRate = 60;
+open( outputVideo );
+
+% Time per frame
+numFrames    = round( T*outputVideo.FrameRate*0.6);
+timePerFrame = T / numFrames;
+
+for frameIdx = 1:numFrames
+
+    % Current time for this frame
+    currentTime = (frameIdx - 1) * timePerFrame;
+
+    if currentTime <= T_min
+        continue
+    end
+
+    % Find the closest time in your timeArray (or interpolate if needed)
+    [~,  iidx ] = min( abs( t_arr - currentTime ) );
+
+    set(  grobot, 'xdata',   x_arr( iidx , : ), 'ydata',  y_arr( iidx , : ) )
+
+    tmp_pEL = [ x_arr( iidx, 2 ), y_arr( iidx, 2 ) ];
+    tmp_pEE = [ x_arr( iidx, 3 ), y_arr( iidx, 3 ) ];
+
+    for i = 1 :nDOF
+        set( gmarkers{ i }, 'xdata', x_arr( iidx, i ), 'ydata', y_arr( iidx, i ) )
+    end
+
+    set( gEE0, 'xdata', data.p0_arr( iidx, 1 ), 'ydata', data.p0_arr( iidx, 2 ) )
+    
+    for i = 1: nDOF
+        set( g0markers{ i }, 'xdata', x0_arr( iidx, i ), 'ydata', y0_arr( iidx, i ), 'markerfacealpha', data.gain( iidx ), 'markeredgealpha', 0.5*data.gain( iidx ) )
+    end    
+
+    set( g0robot, 'XData', x0_arr( iidx , : ), 'YData', y0_arr( iidx , : ) )
+    g0robot.Color( 4 ) = data.gain( iidx );
+
+
+    % Capture frame
+    frame = getframe( f );
+    
+    % Write frame to video
+    writeVideo( outputVideo, frame );
+
+    if currentTime >= T_max
+        break;
+    end
+
+end
+
+% Close the video file
+close( outputVideo );
+
+% Optionally, close the figure
+close( f );
+
+%% ---- (1e-b) For Task-space Position, Redundancy, Repeatability
+dir1 = "C:\Users\moses\OneDrive\Documents\GitHub\mujoco-py-v2\ThesisExamples\data\sec513_task_redunt_repeat.mat";
+dir2 = "C:\Users\moses\OneDrive\Documents\GitHub\mujoco-py-v2\ThesisExamples\data\sec513_task_redunt_no_repeat.mat";
+
+data = load( dir1 );
+data2 = load( dir2 );
+
+mk = 2000;
+c_tmp1 = [0.6350 0.0780 0.1840];
+c_tmp2 = [0.0000 0.4470 0.7410];
+
+
+[ N, ~ ] = size( data.q_arr );
+dt = data.t_arr( 2 ) -  data.t_arr( 1 );
+t_arr = dt * (0:(N-1));
+T = max( data.t_arr );
+
+
+% The actual Robot Locations
+q_abs  = cumsum( data.q_arr, 2 );
+x_arr = cumsum( cos( q_abs ), 2 );
+y_arr = cumsum( sin( q_abs ), 2 );
+
+
+q_tmp = cumsum( data.q0_init, 2 );
+x_tmp = cumsum( cos( q_tmp ), 2 );
+y_tmp = cumsum( sin( q_tmp ), 2 );
+
+x_tmp = [ 0, x_tmp ];
+y_tmp = [ 0, y_tmp ];
+
+% Adding the zeros
+x_arr = [ zeros( N, 1 ), x_arr ];
+y_arr = [ zeros( N, 1 ), y_arr ];
+
+% The virtual robot
+q0_abs  = cumsum( data2.q_arr, 2 );
+x0_arr = cumsum( cos( q0_abs ), 2 );
+y0_arr = cumsum( sin( q0_abs ), 2 );
+
+% Adding the zeros
+x0_arr = [ zeros( N, 1 ), x0_arr ];
+y0_arr = [ zeros( N, 1 ), y0_arr ];
+
+% Getting the robot's end-effector, elbow and 
+f = figure( );  a = axes( 'parent', f );
+hold on
+
+Nstart = 500;
+plot( a, data.p0_arr( :, 1 ), data.p0_arr( :, 2 ), 'linewidth', 4, 'color', 'k', 'linestyle', ':')
+plot( a, data.p_arr( Nstart:end, 1 ), data.p_arr( Nstart:end, 2 ), 'linewidth', 4, 'color', 'k', 'linestyle', '-')
+
+alpha = 0.3;
+% 
+% gvirtual_robot = plot( a, x_tmp, y_tmp, 'linewidth',4, 'color', [c_tmp2, 0.3] );
+% for i = 1: nDOF
+%     scatter( a, x_tmp( i ), y_tmp( 1, i ), 0.5*mk, 'o', 'filled', 'markerfacecolor', 'w', 'markeredgecolor', c_tmp2, 'linewidth', 4, 'markerfacealpha', 1, 'markeredgealpha', alpha );
+% end
+
+g0robot = plot( a, x0_arr( 1, : ), y0_arr( 1, : ), 'linewidth',8, 'color', [0,0,0, alpha] );
+grobot  = plot( a, x_arr( 1, : ), y_arr( 1, : ), 'linewidth', 10, 'color', 'k' );
+
+g0markers = cell( 1, nDOF );
+for i = 1: nDOF
+    g0markers{ i }= scatter( a, x0_arr( 1, i ), y0_arr( 1, i ), 0.8*mk, 'o', 'filled', 'markerfacecolor', 'w', 'markeredgecolor', 'k', 'linewidth', 4, 'markerfacealpha', 1, 'markeredgealpha', alpha );
+end
+
+% Getting the number of markers
+nDOF = length( x_arr(1, : ));
+gmarkers = cell( 1, nDOF );
+for i = 1: nDOF
+    gmarkers{ i }= scatter( a, x_arr( 1, i ), y_arr( 1, i ), mk, 'o', 'filled', 'markerfacecolor', 'w', 'markeredgecolor', 'k', 'linewidth', 4 );
+end
+
+axis equal
+set( a, 'xlim', [-3.0, 3.0], 'ylim',[-0.4,5.6], 'xticklabel', {}, 'yticklabel', {})
+xlabel( a, '$X$ (m)', 'fontsize', 40 )
+ylabel( a, '$Y$ (m)', 'fontsize', 40 )
+
+alpha = 0.3;
+
+T_min = 0.0;
+T_max = max( data.t_arr ) ;   
+
+% The desired end-effector position
+gEE0 = scatter( a, data.p0_arr( 1, 1 ), data.p0_arr( 1, 2 ), 0.3*mk, 'o', 'filled', 'markerfacecolor', c_tmp1, 'markeredgecolor', 'k', 'linewidth', 4 );
+
+% Plotting the robot 
+% Set up the video writer
+delete('videos/task_space_redundancy_repeat.mp4'  )
+outputVideo = VideoWriter( 'videos/task_space_redundancy_repeat.mp4', 'MPEG-4' );
+outputVideo.FrameRate = 60;
+open( outputVideo );
+
+% Time per frame
+numFrames    = round( T*outputVideo.FrameRate*1.0);
+timePerFrame = T / numFrames;
+
+for frameIdx = 1:numFrames
+
+    % Current time for this frame
+    currentTime = (frameIdx - 1) * timePerFrame;
+
+    if currentTime <= T_min
+        continue
+    end
+
+    % Find the closest time in your timeArray (or interpolate if needed)
+    [~,  iidx ] = min( abs( t_arr - currentTime ) );
+
+    set(  grobot, 'xdata',   x_arr( iidx , : ), 'ydata',  y_arr( iidx , : ) )
+
+    tmp_pEL = [ x_arr( iidx, 2 ), y_arr( iidx, 2 ) ];
+    tmp_pEE = [ x_arr( iidx, 3 ), y_arr( iidx, 3 ) ];
+
+    for i = 1 :nDOF
+        set( gmarkers{ i }, 'xdata', x_arr( iidx, i ), 'ydata', y_arr( iidx, i ) )
+    end
+
+    for i = 1 :nDOF
+        set( g0markers{ i }, 'xdata', x0_arr( iidx, i ), 'ydata', y0_arr( iidx, i ) )
+    end
+
+    set( gEE0, 'xdata', data.p0_arr( iidx, 1 ), 'ydata', data.p0_arr( iidx, 2 ) )
+
+    set( g0robot, 'XData', x0_arr( iidx , : ), 'YData', y0_arr( iidx , : ) )
+
+
+    % Capture frame
+    frame = getframe( f );
+    
+    % Write frame to video
+    writeVideo( outputVideo, frame );
+
+    if currentTime >= T_max
+        break;
+    end
+
+end
+
+% Close the video file
+close( outputVideo );
+
+% Optionally, close the figure
+close( f );
+
 %% ---- (1f) For Task-space Position and Orientation, Redundancy
 
 dir = "C:\Users\moses\OneDrive\Documents\GitHub\mujoco-py-v2\ThesisExamples\data\sec514_task_pos_orient_redunt1.mat";
 data = load( dir ); 
 
-
+c_tmp1 = [0.6350 0.0780 0.1840];
+c_tmp2 = [0.0000 0.4470 0.7410];
+c_tmp3 = [0.4660 0.6740 0.1880];
 N_stl = 7;
+
+T = max( data.t_arr );
+T_min = 1.9;
+T_max = 8;
 
 % For selecing the time step
 Np = length( data.t_arr );
 
 f = figure( ); 
-a = axes( 'parent', f );
+
+a1 = subplot( 2, 2, 2 );
+hold on
+delp = vecnorm( data.p0_arr' - data.p_arr' );
+
+plot( data.t_arr, delp, 'linewidth', 8, 'color', c_tmp1 )
+ptmp1 = scatter( data.t_arr( 1 ), delp( 1 ), 500, 'filled', 'o', 'markerfacecolor', 'w', 'markeredgecolor', c_tmp1, 'linewidth', 5 );
+set( a1, 'fontsize', 40, 'xticklabel', {}, 'xlim', [0, T] )
+ylabel( a1, '$||\mathbf{p}(t)-\mathbf{p}_0(t)||$' )
+
+a2 = subplot( 2, 2, 4 );
+hold on
+
+delR = zeros( 1, length( data.t_arr ) );
+for i = 1 : length( data.t_arr )
+    tmp = squeeze( data.R_arr( i, :, : ) )'* squeeze( data.R0_arr( i, :, :) );
+    tmp2 = logm( tmp );
+
+    tmp3 = [ tmp2( 3, 2 ), tmp2( 1, 3 ), tmp2( 2, 1 ) ];
+
+    delR( i ) = vecnorm( tmp3 );
+end
+
+plot( data.t_arr, delR , 'linewidth', 8, 'color', c_tmp3 )
+ptmp2 = scatter( data.t_arr( 1 ), delR( 1 ), 500, 'filled', 'o', 'markerfacecolor', 'w', 'markeredgecolor', c_tmp3, 'linewidth', 5 );
+set( a2, 'fontsize', 40, 'xlim', [0, T] )
+xlabel( a2, '$t$ (s)'); 
+ylabel( a2, '$||$Log$(\mathbf{R}^{T}(t) \mathbf{R}_0(t))||$' )
+
+a = subplot( 2, 2, [1,3] );
 hold on; % Keep the figure open to plot the next STL file
+
+scl = 0.05;
+p_goal = data.p0_arr( end, :);
+x = 0.1 + p_goal( 1 );
+y =       p_goal( 2 );
+z =       p_goal( 3 );
+R_goal = squeeze( data.R0_arr( end , :, : ) );
+
+r1 = 2*scl * R_goal( :, 1 );
+r2 = 2*scl * R_goal( :, 2 );
+r3 = 2*scl * R_goal( :, 3 );
+
+g_goal = scatter3( a, x, y, z, 300, 'filled', 'd', 'markerfacecolor', c_tmp1, 'markeredgecolor', 'k', 'linewidth', 5 );
+quiver3( a, x, y, z, r1( 1 ), r1( 2 ), r1( 3 ), 'linewidth', 4, 'color', c_tmp3, 'MaxHeadSize',0.6 );
+quiver3( a, x, y, z, r2( 1 ), r2( 2 ), r2( 3 ), 'linewidth', 4, 'color', c_tmp3, 'MaxHeadSize',0.6 );
+quiver3( a, x, y, z, r3( 1 ), r3( 2 ), r3( 3 ), 'linewidth', 4, 'color', c_tmp3, 'MaxHeadSize',0.6 );
+
 
 patches = cell( 1, N_stl );
 
-   
 for i = 1:N_stl
     % Read the STL file
     [ vertices, faces ] = stlread( ['../models/iiwa14/meshes/link_', num2str( i ), '.stl' ] );
 
     % Plot the STL file
 
-    patches{ i } = patch('Vertices', vertices.Points, 'Faces', vertices.ConnectivityList, ...
-                         'FaceColor', 0.4*ones( 1, 3), 'EdgeColor', [0.0,0.0,0.0], 'FaceAlpha', 0.8, 'EdgeAlpha', 0.2 );
+    patches{ i } = patch( 'Vertices', vertices.Points, 'Faces', vertices.ConnectivityList, ...
+                         'FaceColor', 0.4*ones( 1, 3), 'EdgeColor', [0.0,0.0,0.0], 'FaceAlpha', 0.4, 'EdgeAlpha', 0.2 );
 
     % Get the position for each-link and update 
     p_tmp = squeeze( data.p_links( 1, i, : ) ); 
@@ -1600,37 +1933,53 @@ for i = 1:N_stl
 
 end
 
+p_tmp = data.p0_arr( 1, : );
+x = 0.1 + p_tmp( 1 );
+y =       p_tmp( 2 );
+z =       p_tmp( 3 );
+R_tmp = squeeze( data.R0_arr( 1 , :, : ) );
+
+r1 = 2*scl * R_tmp( :, 1 );
+r2 = 2*scl * R_tmp( :, 2 );
+r3 = 2*scl * R_tmp( :, 3 );
+
+g1_p0 = scatter3( a, x, y, z, 300, 'filled', 'markerfacecolor', c_tmp1, 'markeredgecolor', 'k', 'linewidth', 5 );
+g1_x0 = quiver3( a, x, y, z, r1( 1 ), r1( 2 ), r1( 3 ), 'linewidth', 4, 'color', c_tmp3, 'MaxHeadSize',0.6 );
+g1_y0 = quiver3( a, x, y, z, r2( 1 ), r2( 2 ), r2( 3 ), 'linewidth', 4, 'color', c_tmp3, 'MaxHeadSize',0.6 );
+g1_z0 = quiver3( a, x, y, z, r3( 1 ), r3( 2 ), r3( 3 ), 'linewidth', 4, 'color', c_tmp3, 'MaxHeadSize',0.6 );
+
+
 % Adding the markers and also orientation
-p_tmp = data.p_arr( step, : );
+p_tmp = data.p_arr( 1, : );
 x = 0.1 + p_tmp( 1 );
 y =       p_tmp( 2 );
 z =       p_tmp( 3 );
 
 scl = 0.05;
-R_tmp = squeeze( data.R_arr( step , :, : ) );
+R_tmp = squeeze( data.R_arr( 1 , :, : ) );
 
 r1 = scl * R_tmp( :, 1 );
 r2 = scl * R_tmp( :, 2 );
 r3 = scl * R_tmp( :, 3 );
 
-
-scatter3( a, x, y, z, 500, 'filled', 'markerfacecolor', 'w', 'markeredgecolor', 'k', 'linewidth', 5 )
-quiver3( a, x, y, z, r1( 1 ), r1( 2 ), r1( 3 ), 'linewidth', 8, 'color', 'r' )
-quiver3( a, x, y, z, r2( 1 ), r2( 2 ), r2( 3 ), 'linewidth', 8, 'color', 'g' )
-quiver3( a, x, y, z, r3( 1 ), r3( 2 ), r3( 3 ), 'linewidth', 8, 'color', 'b' )
+g1_p = scatter3( a, x, y, z, 500, 'filled', 'markerfacecolor', 'w', 'markeredgecolor', 'k', 'linewidth', 5 );
+g1_x = quiver3( a, x, y, z, r1( 1 ), r1( 2 ), r1( 3 ), 'linewidth', 8, 'color', 'r', 'MaxHeadSize',1.0 );
+g1_y = quiver3( a, x, y, z, r2( 1 ), r2( 2 ), r2( 3 ), 'linewidth', 8, 'color', 'g', 'MaxHeadSize',1.0 );
+g1_z = quiver3( a, x, y, z, r3( 1 ), r3( 2 ), r3( 3 ), 'linewidth', 8, 'color', 'b', 'MaxHeadSize',1.0   );
 
 
 lighting gouraud
 light('Position',[1 0 0],'Style','infinite');
 
-plot3( a, data.p0_arr( :, 1 ), data.p0_arr( :, 2 ), data.p0_arr( :, 3 ), 'linewidth', 5, 'color', 'k', 'linestyle', '--' )
-plot3( a, data.p_arr(  :, 1 ), data.p_arr(  :, 2 ), data.p_arr(  :, 3 ), 'linewidth', 10, 'color', 'k', 'linestyle', '-' )
+% plot3( a, data.p0_arr( :, 1 ), data.p0_arr( :, 2 ), data.p0_arr( :, 3 ), 'linewidth', 5, 'color', 'k', 'linestyle', '--' )
+% plot3( a, data.p_arr(  :, 1 ), data.p_arr(  :, 2 ), data.p_arr(  :, 3 ), 'linewidth', 10, 'color', 'k', 'linestyle', '-' )
 
 % Update transformation 
 view( [ 90, 0 ] )
 axis equal
 set( a, 'xlim', [-0.2794,0.9169], 'ylim', [-0.44,0.42], 'zlim', [0,0.6121] ) 
 set( a, 'xticklabel', {}, 'yticklabel', {},'zticklabel', {} ,'visible', 'off')
+
 
 % Plotting the robot 
 % Set up the video writer
@@ -1639,12 +1988,10 @@ outputVideo = VideoWriter( 'videos/task_space_pos_orient_moves.mp4', 'MPEG-4' );
 outputVideo.FrameRate = 60;
 open( outputVideo );
 
-T = max( data.t_arr );
-T_min = 1.8;
-T_max = 6.0;
+
 
 % Time per frame
-numFrames    = round( T*outputVideo.FrameRate*1.2);
+numFrames    = round( T*outputVideo.FrameRate*1.0);
 timePerFrame = T / numFrames;
 
 
@@ -1672,6 +2019,35 @@ for frameIdx = 1:numFrames
 
     end
     
+    p_tmp = data.p_arr( iidx, : );
+    p_tmp( 1 ) = p_tmp( 1 ) + 0.1;
+    R_tmp = squeeze( data.R_arr( iidx, :, : ) );
+
+    r1 = scl * R_tmp( :, 1 );
+    r2 = scl * R_tmp( :, 2 );
+    r3 = scl * R_tmp( :, 3 );
+
+    set( g1_p, 'Xdata', p_tmp( 1 ), 'Ydata', p_tmp( 2 ), 'Zdata', p_tmp( 3 )  )
+    set( g1_x, 'Xdata', p_tmp( 1 ), 'Ydata', p_tmp( 2 ), 'Zdata', p_tmp( 3 ), 'UData', r1( 1 ), 'VData', r1( 2 ), 'WData', r1( 3 ) )
+    set( g1_y, 'Xdata', p_tmp( 1 ), 'Ydata', p_tmp( 2 ), 'Zdata', p_tmp( 3 ), 'UData', r2( 1 ), 'VData', r2( 2 ), 'WData', r2( 3 ) )
+    set( g1_z, 'Xdata', p_tmp( 1 ), 'Ydata', p_tmp( 2 ), 'Zdata', p_tmp( 3 ), 'UData', r3( 1 ), 'VData', r3( 2 ), 'WData', r3( 3 ) )
+
+    p_tmp = data.p0_arr( iidx, : );
+    p_tmp( 1 ) = p_tmp( 1 ) + 0.1;
+    R_tmp = squeeze( data.R0_arr( iidx, :, : ) );
+
+    r1 = 2*scl * R_tmp( :, 1 );
+    r2 = 2*scl * R_tmp( :, 2 );
+    r3 = 2*scl * R_tmp( :, 3 );
+
+    set( g1_p0, 'Xdata', p_tmp( 1 ), 'Ydata', p_tmp( 2 ), 'Zdata', p_tmp( 3 )  )
+    set( g1_x0, 'Xdata', p_tmp( 1 ), 'Ydata', p_tmp( 2 ), 'Zdata', p_tmp( 3 ), 'UData', r1( 1 ), 'VData', r1( 2 ), 'WData', r1( 3 ) )
+    set( g1_y0, 'Xdata', p_tmp( 1 ), 'Ydata', p_tmp( 2 ), 'Zdata', p_tmp( 3 ), 'UData', r2( 1 ), 'VData', r2( 2 ), 'WData', r2( 3 ) )
+    set( g1_z0, 'Xdata', p_tmp( 1 ), 'Ydata', p_tmp( 2 ), 'Zdata', p_tmp( 3 ), 'UData', r3( 1 ), 'VData', r3( 2 ), 'WData', r3( 3 ) )
+
+    set( ptmp1, 'XData', data.t_arr( iidx ), 'YData', delp( iidx ) )
+    set( ptmp2, 'XData', data.t_arr( iidx ), 'YData', delR( iidx ) )
+
     currentTime
 
     % Capture frame
@@ -1695,6 +2071,411 @@ close( f );
 
 
 %% ---- (1g) Obstacle Avoidance
+
+dir = "C:\Users\moses\OneDrive\Documents\GitHub\mujoco-py-v2\ThesisExamples\data\sec521_obstacle_avoidance.mat";
+data = load( dir ); 
+
+c_tmp1 = [0.6350 0.0780 0.1840];
+c_tmp2 = [0.0000 0.4470 0.7410];
+c_tmp3 = [0.4660 0.6740 0.1880];
+N_stl = 7;
+
+T = max( data.t_arr );
+T_min = 1.9;
+T_max = T;
+
+% For selecing the time step
+Np = length( data.t_arr );
+
+f = figure( ); a = axes( 'parent', f );
+hold on; % Keep the figure open to plot the next STL file
+
+
+plot3( a, data.p0_arr( :, 1 ), data.p0_arr( :, 2 ), data.p0_arr( :, 3 ), 'linewidth',4, 'color', 'k', 'linestyle', '-' )
+scatter3( a, 0.1+data.p0_arr( 1, 1 ), data.p0_arr( 1, 2 ), data.p0_arr( 1, 3 ), 500, 'filled', 'markerfacecolor', 'w', 'markeredgecolor', 'k', 'linewidth', 5 );
+r = 0.05;
+[X,Y,Z] = sphere;
+
+X2 = X * r;
+Y2 = Y * r;
+Z2 = Z * r;
+surf(a, X2+data.obs(1)+0.1, Y2+data.obs(2), Z2+data.obs(3), 'edgecolor', 'k', 'facecolor', 'r', 'edgealpha', 0.2, 'facealpha', 0.5 )
+
+scl = 0.05;
+p_goal = data.p0_arr( end, :);
+x = 0.1 + p_goal( 1 );
+y =       p_goal( 2 );
+z =       p_goal( 3 );
+R_goal = squeeze( data.R0_arr( end , :, : ) );
+
+r1 = 2*scl * R_goal( :, 1 );
+r2 = 2*scl * R_goal( :, 2 );
+r3 = 2*scl * R_goal( :, 3 );
+
+g_goal = scatter3( a, x, y, z, 300, 'filled', 'd', 'markerfacecolor', c_tmp1, 'markeredgecolor', 'k', 'linewidth', 5 );
+quiver3( a, x, y, z, r1( 1 ), r1( 2 ), r1( 3 ), 'linewidth', 4, 'color', c_tmp3, 'MaxHeadSize',0.6 );
+quiver3( a, x, y, z, r2( 1 ), r2( 2 ), r2( 3 ), 'linewidth', 4, 'color', c_tmp3, 'MaxHeadSize',0.6 );
+quiver3( a, x, y, z, r3( 1 ), r3( 2 ), r3( 3 ), 'linewidth', 4, 'color', c_tmp3, 'MaxHeadSize',0.6 );
+
+
+patches = cell( 1, N_stl );
+
+for i = 1:N_stl
+    % Read the STL file
+    [ vertices, faces ] = stlread( ['../models/iiwa14/meshes/link_', num2str( i ), '.stl' ] );
+
+    % Plot the STL file
+
+    patches{ i } = patch( 'Vertices', vertices.Points, 'Faces', vertices.ConnectivityList, ...
+                         'FaceColor', 0.4*ones( 1, 3), 'EdgeColor', [0.0,0.0,0.0], 'FaceAlpha', 0.4, 'EdgeAlpha', 0.2 );
+
+    % Get the position for each-link and update 
+    p_tmp = squeeze( data.p_links( 1, i, : ) ); 
+    R_tmp = squeeze( data.R_links( 1, i, :, : ) );
+    H_tmp = [ R_tmp, p_tmp; 0,0,0,1];
+
+    hg = hgtransform( 'Matrix', H_tmp );
+    set( patches{ i }, 'Parent', hg);
+
+end
+
+p_tmp = data.p0_arr( 1, : );
+x = 0.1 + p_tmp( 1 );
+y =       p_tmp( 2 );
+z =       p_tmp( 3 );
+R_tmp = squeeze( data.R0_arr( 1 , :, : ) );
+
+r1 = 2*scl * R_tmp( :, 1 );
+r2 = 2*scl * R_tmp( :, 2 );
+r3 = 2*scl * R_tmp( :, 3 );
+
+g1_p0 = scatter3( a, x, y, z, 300, 'filled', 'markerfacecolor', c_tmp1, 'markeredgecolor', 'k', 'linewidth', 5 );
+g1_x0 = quiver3( a, x, y, z, r1( 1 ), r1( 2 ), r1( 3 ), 'linewidth', 4, 'color', c_tmp3, 'MaxHeadSize',0.6 );
+g1_y0 = quiver3( a, x, y, z, r2( 1 ), r2( 2 ), r2( 3 ), 'linewidth', 4, 'color', c_tmp3, 'MaxHeadSize',0.6 );
+g1_z0 = quiver3( a, x, y, z, r3( 1 ), r3( 2 ), r3( 3 ), 'linewidth', 4, 'color', c_tmp3, 'MaxHeadSize',0.6 );
+
+
+% Adding the markers and also orientation
+p_tmp = data.p_arr( 1, : );
+x = 0.1 + p_tmp( 1 );
+y =       p_tmp( 2 );
+z =       p_tmp( 3 );
+
+scl = 0.05;
+R_tmp = squeeze( data.R_arr( 1 , :, : ) );
+
+r1 = scl * R_tmp( :, 1 );
+r2 = scl * R_tmp( :, 2 );
+r3 = scl * R_tmp( :, 3 );
+
+g1_p = scatter3( a, x, y, z, 500, 'filled', 'markerfacecolor', 'w', 'markeredgecolor', 'k', 'linewidth', 5 );
+g1_x = quiver3( a, x, y, z, r1( 1 ), r1( 2 ), r1( 3 ), 'linewidth', 8, 'color', 'r', 'MaxHeadSize',1.0 );
+g1_y = quiver3( a, x, y, z, r2( 1 ), r2( 2 ), r2( 3 ), 'linewidth', 8, 'color', 'g', 'MaxHeadSize',1.0 );
+g1_z = quiver3( a, x, y, z, r3( 1 ), r3( 2 ), r3( 3 ), 'linewidth', 8, 'color', 'b', 'MaxHeadSize',1.0   );
+
+
+lighting gouraud
+light('Position',[1 0 0],'Style','infinite');
+
+% plot3( a, data.p0_arr( :, 1 ), data.p0_arr( :, 2 ), data.p0_arr( :, 3 ), 'linewidth', 5, 'color', 'k', 'linestyle', '--' )
+% plot3( a, data.p_arr(  :, 1 ), data.p_arr(  :, 2 ), data.p_arr(  :, 3 ), 'linewidth', 10, 'color', 'k', 'linestyle', '-' )
+
+% Update transformation 
+view( [ 90, 0 ] )
+axis equal
+set( a, 'xlim', [-0.2794,0.9169], 'ylim', [-0.44,0.42], 'zlim', [0,0.6121] ) 
+set( a, 'xticklabel', {}, 'yticklabel', {},'zticklabel', {} ,'visible', 'off')
+
+
+% Plotting the robot 
+% Set up the video writer
+delete('videos/task_space_obs_sing.mp4'  )
+outputVideo = VideoWriter( 'videos/task_space_obs_sing.mp4', 'MPEG-4' );
+outputVideo.FrameRate = 60;
+open( outputVideo );
+
+
+
+% Time per frame
+numFrames    = round( T*outputVideo.FrameRate*1.5);
+timePerFrame = T / numFrames;
+
+
+for frameIdx = 1:numFrames
+
+    % Current time for this frame
+    currentTime = (frameIdx - 1) * timePerFrame;
+
+    if currentTime <= T_min
+        continue
+    end
+
+    % Find the closest time in your timeArray (or interpolate if needed)
+    [~,  iidx ] = min( abs( data.t_arr - currentTime ) );
+
+    for i = 1 : 7
+
+        % Get the position for each-link and update 
+        p_tmp = squeeze( data.p_links( iidx, i, : ) ); 
+        R_tmp = squeeze( data.R_links( iidx, i, :, : ) );
+        H_tmp = [ R_tmp, p_tmp; 0,0,0,1];
+    
+        hg = hgtransform( 'Matrix', H_tmp );
+        set( patches{ i }, 'Parent', hg);
+
+    end
+    
+    p_tmp = data.p_arr( iidx, : );
+    p_tmp( 1 ) = p_tmp( 1 ) + 0.1;
+    R_tmp = squeeze( data.R_arr( iidx, :, : ) );
+
+    r1 = scl * R_tmp( :, 1 );
+    r2 = scl * R_tmp( :, 2 );
+    r3 = scl * R_tmp( :, 3 );
+
+    set( g1_p, 'Xdata', p_tmp( 1 ), 'Ydata', p_tmp( 2 ), 'Zdata', p_tmp( 3 )  )
+    set( g1_x, 'Xdata', p_tmp( 1 ), 'Ydata', p_tmp( 2 ), 'Zdata', p_tmp( 3 ), 'UData', r1( 1 ), 'VData', r1( 2 ), 'WData', r1( 3 ) )
+    set( g1_y, 'Xdata', p_tmp( 1 ), 'Ydata', p_tmp( 2 ), 'Zdata', p_tmp( 3 ), 'UData', r2( 1 ), 'VData', r2( 2 ), 'WData', r2( 3 ) )
+    set( g1_z, 'Xdata', p_tmp( 1 ), 'Ydata', p_tmp( 2 ), 'Zdata', p_tmp( 3 ), 'UData', r3( 1 ), 'VData', r3( 2 ), 'WData', r3( 3 ) )
+
+    p_tmp = data.p0_arr( iidx, : );
+    p_tmp( 1 ) = p_tmp( 1 ) + 0.1;
+    R_tmp = squeeze( data.R0_arr( iidx, :, : ) );
+
+    r1 = 2*scl * R_tmp( :, 1 );
+    r2 = 2*scl * R_tmp( :, 2 );
+    r3 = 2*scl * R_tmp( :, 3 );
+
+    set( g1_p0, 'Xdata', p_tmp( 1 ), 'Ydata', p_tmp( 2 ), 'Zdata', p_tmp( 3 )  )
+    set( g1_x0, 'Xdata', p_tmp( 1 ), 'Ydata', p_tmp( 2 ), 'Zdata', p_tmp( 3 ), 'UData', r1( 1 ), 'VData', r1( 2 ), 'WData', r1( 3 ) )
+    set( g1_y0, 'Xdata', p_tmp( 1 ), 'Ydata', p_tmp( 2 ), 'Zdata', p_tmp( 3 ), 'UData', r2( 1 ), 'VData', r2( 2 ), 'WData', r2( 3 ) )
+    set( g1_z0, 'Xdata', p_tmp( 1 ), 'Ydata', p_tmp( 2 ), 'Zdata', p_tmp( 3 ), 'UData', r3( 1 ), 'VData', r3( 2 ), 'WData', r3( 3 ) )
+
+    currentTime
+
+    % Capture frame
+    frame = getframe( f );
+    
+    % Write frame to video
+    writeVideo( outputVideo, frame );
+
+    if currentTime >= T_max
+        break;
+    end
+
+end
+
+
+% Close the video file
+close( outputVideo );
+
+% Optionally, close the figure
+close( f );
+
+%% ---- (1g-a) Obstacle Avoidance, Multiple
+
+dir = "C:\Users\moses\OneDrive\Documents\GitHub\mujoco-py-v2\ThesisExamples\data\sec521_obstacle_avoidance_mult.mat";
+data = load( dir ); 
+
+c_tmp1 = [0.6350 0.0780 0.1840];
+c_tmp2 = [0.0000 0.4470 0.7410];
+c_tmp3 = [0.4660 0.6740 0.1880];
+N_stl = 7;
+
+T = max( data.t_arr );
+T_min = 1.9;
+T_max = T;
+
+% For selecing the time step
+Np = length( data.t_arr );
+
+f = figure( ); a = axes( 'parent', f );
+hold on; % Keep the figure open to plot the next STL file
+
+
+plot3( a, data.p0_arr( :, 1 ), data.p0_arr( :, 2 ), data.p0_arr( :, 3 ), 'linewidth',4, 'color', 'k', 'linestyle', '-' )
+scatter3( a, 0.1+data.p0_arr( 1, 1 ), data.p0_arr( 1, 2 ), data.p0_arr( 1, 3 ), 500, 'filled', 'markerfacecolor', 'w', 'markeredgecolor', 'k', 'linewidth', 5 );
+r = 0.05;
+[X,Y,Z] = sphere;
+
+X2 = X * r;
+Y2 = Y * r;
+Z2 = Z * r;
+surf(a, X2+data.obs1(1), Y2+data.obs1(2), Z2+data.obs1(3), 'edgecolor', 'k', 'facecolor', 'r', 'edgealpha', 0.2, 'facealpha', 1.0 )
+surf(a, X2+data.obs2(1), Y2+data.obs2(2), Z2+data.obs2(3), 'edgecolor', 'k', 'facecolor', 'g', 'edgealpha', 0.2, 'facealpha', 1.0 )
+surf(a, X2+data.obs3(1), Y2+data.obs3(2), Z2+data.obs3(3), 'edgecolor', 'k', 'facecolor', 'b', 'edgealpha', 0.2, 'facealpha', 1.0 )
+
+scl = 0.05;
+p_goal = data.p0_arr( end, :);
+x = 0.1 + p_goal( 1 );
+y =       p_goal( 2 );
+z =       p_goal( 3 );
+R_goal = squeeze( data.R0_arr( end , :, : ) );
+
+r1 = 2*scl * R_goal( :, 1 );
+r2 = 2*scl * R_goal( :, 2 );
+r3 = 2*scl * R_goal( :, 3 );
+
+g_goal = scatter3( a, x, y, z, 300, 'filled', 'd', 'markerfacecolor', c_tmp1, 'markeredgecolor', 'k', 'linewidth', 5 );
+quiver3( a, x, y, z, r1( 1 ), r1( 2 ), r1( 3 ), 'linewidth', 4, 'color', c_tmp3, 'MaxHeadSize',0.6 );
+quiver3( a, x, y, z, r2( 1 ), r2( 2 ), r2( 3 ), 'linewidth', 4, 'color', c_tmp3, 'MaxHeadSize',0.6 );
+quiver3( a, x, y, z, r3( 1 ), r3( 2 ), r3( 3 ), 'linewidth', 4, 'color', c_tmp3, 'MaxHeadSize',0.6 );
+
+
+patches = cell( 1, N_stl );
+
+for i = 1:N_stl
+    % Read the STL file
+    [ vertices, faces ] = stlread( ['../models/iiwa14/meshes/link_', num2str( i ), '.stl' ] );
+
+    % Plot the STL file
+
+    patches{ i } = patch( 'Vertices', vertices.Points, 'Faces', vertices.ConnectivityList, ...
+                         'FaceColor', 0.4*ones( 1, 3), 'EdgeColor', [0.0,0.0,0.0], 'FaceAlpha', 0.4, 'EdgeAlpha', 0.2 );
+
+    % Get the position for each-link and update 
+    p_tmp = squeeze( data.p_links( 1, i, : ) ); 
+    R_tmp = squeeze( data.R_links( 1, i, :, : ) );
+    H_tmp = [ R_tmp, p_tmp; 0,0,0,1];
+
+    hg = hgtransform( 'Matrix', H_tmp );
+    set( patches{ i }, 'Parent', hg);
+
+end
+
+p_tmp = data.p0_arr( 1, : );
+x = 0.1 + p_tmp( 1 );
+y =       p_tmp( 2 );
+z =       p_tmp( 3 );
+R_tmp = squeeze( data.R0_arr( 1 , :, : ) );
+
+r1 = 2*scl * R_tmp( :, 1 );
+r2 = 2*scl * R_tmp( :, 2 );
+r3 = 2*scl * R_tmp( :, 3 );
+
+g1_p0 = scatter3( a, x, y, z, 300, 'filled', 'markerfacecolor', c_tmp1, 'markeredgecolor', 'k', 'linewidth', 5 );
+g1_x0 = quiver3( a, x, y, z, r1( 1 ), r1( 2 ), r1( 3 ), 'linewidth', 4, 'color', c_tmp3, 'MaxHeadSize',0.6 );
+g1_y0 = quiver3( a, x, y, z, r2( 1 ), r2( 2 ), r2( 3 ), 'linewidth', 4, 'color', c_tmp3, 'MaxHeadSize',0.6 );
+g1_z0 = quiver3( a, x, y, z, r3( 1 ), r3( 2 ), r3( 3 ), 'linewidth', 4, 'color', c_tmp3, 'MaxHeadSize',0.6 );
+
+
+% Adding the markers and also orientation
+p_tmp = data.p_arr( 1, : );
+x = 0.1 + p_tmp( 1 );
+y =       p_tmp( 2 );
+z =       p_tmp( 3 );
+
+scl = 0.05;
+R_tmp = squeeze( data.R_arr( 1 , :, : ) );
+
+r1 = scl * R_tmp( :, 1 );
+r2 = scl * R_tmp( :, 2 );
+r3 = scl * R_tmp( :, 3 );
+
+g1_p = scatter3( a, x, y, z, 500, 'filled', 'markerfacecolor', 'w', 'markeredgecolor', 'k', 'linewidth', 5 );
+g1_x = quiver3( a, x, y, z, r1( 1 ), r1( 2 ), r1( 3 ), 'linewidth', 8, 'color', 'r', 'MaxHeadSize',1.0 );
+g1_y = quiver3( a, x, y, z, r2( 1 ), r2( 2 ), r2( 3 ), 'linewidth', 8, 'color', 'g', 'MaxHeadSize',1.0 );
+g1_z = quiver3( a, x, y, z, r3( 1 ), r3( 2 ), r3( 3 ), 'linewidth', 8, 'color', 'b', 'MaxHeadSize',1.0   );
+
+
+lighting gouraud
+light('Position',[1 0 0],'Style','infinite');
+
+% plot3( a, data.p0_arr( :, 1 ), data.p0_arr( :, 2 ), data.p0_arr( :, 3 ), 'linewidth', 5, 'color', 'k', 'linestyle', '--' )
+% plot3( a, data.p_arr(  :, 1 ), data.p_arr(  :, 2 ), data.p_arr(  :, 3 ), 'linewidth', 10, 'color', 'k', 'linestyle', '-' )
+
+% Update transformation 
+view( [ 90, 0 ] )
+axis equal
+set( a, 'xlim', [-0.2794,0.9169], 'ylim', [-0.44,0.42], 'zlim', [0,0.6121] ) 
+set( a, 'xticklabel', {}, 'yticklabel', {},'zticklabel', {} ,'visible', 'off')
+
+
+% Plotting the robot 
+% Set up the video writer
+delete('videos/task_space_obs_sing.mp4'  )
+outputVideo = VideoWriter( 'videos/task_space_obs_sing.mp4', 'MPEG-4' );
+outputVideo.FrameRate = 60;
+open( outputVideo );
+
+
+
+% Time per frame
+numFrames    = round( T*outputVideo.FrameRate*1.5);
+timePerFrame = T / numFrames;
+
+
+for frameIdx = 1:numFrames
+
+    % Current time for this frame
+    currentTime = (frameIdx - 1) * timePerFrame;
+
+    if currentTime <= T_min
+        continue
+    end
+
+    % Find the closest time in your timeArray (or interpolate if needed)
+    [~,  iidx ] = min( abs( data.t_arr - currentTime ) );
+
+    for i = 1 : 7
+
+        % Get the position for each-link and update 
+        p_tmp = squeeze( data.p_links( iidx, i, : ) ); 
+        R_tmp = squeeze( data.R_links( iidx, i, :, : ) );
+        H_tmp = [ R_tmp, p_tmp; 0,0,0,1];
+    
+        hg = hgtransform( 'Matrix', H_tmp );
+        set( patches{ i }, 'Parent', hg);
+
+    end
+    
+    p_tmp = data.p_arr( iidx, : );
+    p_tmp( 1 ) = p_tmp( 1 ) + 0.1;
+    R_tmp = squeeze( data.R_arr( iidx, :, : ) );
+
+    r1 = scl * R_tmp( :, 1 );
+    r2 = scl * R_tmp( :, 2 );
+    r3 = scl * R_tmp( :, 3 );
+
+    set( g1_p, 'Xdata', p_tmp( 1 ), 'Ydata', p_tmp( 2 ), 'Zdata', p_tmp( 3 )  )
+    set( g1_x, 'Xdata', p_tmp( 1 ), 'Ydata', p_tmp( 2 ), 'Zdata', p_tmp( 3 ), 'UData', r1( 1 ), 'VData', r1( 2 ), 'WData', r1( 3 ) )
+    set( g1_y, 'Xdata', p_tmp( 1 ), 'Ydata', p_tmp( 2 ), 'Zdata', p_tmp( 3 ), 'UData', r2( 1 ), 'VData', r2( 2 ), 'WData', r2( 3 ) )
+    set( g1_z, 'Xdata', p_tmp( 1 ), 'Ydata', p_tmp( 2 ), 'Zdata', p_tmp( 3 ), 'UData', r3( 1 ), 'VData', r3( 2 ), 'WData', r3( 3 ) )
+
+    p_tmp = data.p0_arr( iidx, : );
+    p_tmp( 1 ) = p_tmp( 1 ) + 0.1;
+    R_tmp = squeeze( data.R0_arr( iidx, :, : ) );
+
+    r1 = 2*scl * R_tmp( :, 1 );
+    r2 = 2*scl * R_tmp( :, 2 );
+    r3 = 2*scl * R_tmp( :, 3 );
+
+    set( g1_p0, 'Xdata', p_tmp( 1 ), 'Ydata', p_tmp( 2 ), 'Zdata', p_tmp( 3 )  )
+    set( g1_x0, 'Xdata', p_tmp( 1 ), 'Ydata', p_tmp( 2 ), 'Zdata', p_tmp( 3 ), 'UData', r1( 1 ), 'VData', r1( 2 ), 'WData', r1( 3 ) )
+    set( g1_y0, 'Xdata', p_tmp( 1 ), 'Ydata', p_tmp( 2 ), 'Zdata', p_tmp( 3 ), 'UData', r2( 1 ), 'VData', r2( 2 ), 'WData', r2( 3 ) )
+    set( g1_z0, 'Xdata', p_tmp( 1 ), 'Ydata', p_tmp( 2 ), 'Zdata', p_tmp( 3 ), 'UData', r3( 1 ), 'VData', r3( 2 ), 'WData', r3( 3 ) )
+
+    currentTime
+
+    % Capture frame
+    frame = getframe( f );
+    
+    % Write frame to video
+    writeVideo( outputVideo, frame );
+
+    if currentTime >= T_max
+        break;
+    end
+
+end
+
+
+% Close the video file
+close( outputVideo );
+
+% Optionally, close the figure
+close( f );
+
 
 %% ---- (1h) Managing Contact and Physical Interaction
 

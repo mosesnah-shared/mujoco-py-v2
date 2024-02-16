@@ -24,7 +24,7 @@ np.set_printoptions( precision = 4, threshold = 9, suppress = True )
 T        = 6.                       # Total Simulation Time
 dt       = model.opt.timestep       # Time-step for the simulation (set in xml file)
 fps      = 30                       # Frames per second
-save_ps  = 100                      # Saving point per second
+save_ps  = 1000                     # Saving point per second
 n_frames = 0                        # The current frame of the simulation
 n_saves  = 0                        # Update for the saving point
 speed    = 1.0                      # The speed of the simulator
@@ -38,7 +38,7 @@ assert( dt <= t_update and dt <= t_save )
 # The number of degrees of freedom
 nq = model.nq
 
-q_init = np.array( [ 0, np.pi/2, 0, 0, np.pi/2 ])
+q_init = np.ones( nq ) * np.pi/nq
 data.qpos[ 0:nq ] = q_init
 mujoco.mj_forward( model, data )
 
@@ -66,7 +66,7 @@ dp = Jp @ dq
 # Get the initial position of the robot's end-effector
 # and also the other parameters
 pi = np.copy( p )
-pf = pi + np.array( [ 3, 0.0, 0.0 ] )
+pf = pi + np.array( [ 4, 0.0, 0.0 ] )
 t0 = 0.3
 D  = 2.0
 

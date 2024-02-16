@@ -24,7 +24,7 @@ viewer = mujoco_viewer.MujocoViewer( model, data, hide_menus = True )
 np.set_printoptions( precision = 4, threshold = 9, suppress = True )
 
 # Parameters for the simulation
-T        = 8.                       # Total Simulation Time
+T        = 14.                       # Total Simulation Time
 dt       = model.opt.timestep       # Time-step for the simulation (set in xml file)
 fps      = 30                       # Frames per second
 save_ps  = 1000                     # Saving point per second
@@ -46,10 +46,10 @@ data.qpos[ 0:nq ] = q_init
 mujoco.mj_forward( model, data )
 
 # The impedances of the robot 
-Kp = 1600 * np.eye( 3 )
-Bp =  800 * np.eye( 3 )
+Kp = 2000 * np.eye( 3 )
+Bp =  400 * np.eye( 3 )
 
-Bq = 20 * np.eye( model.nq )
+Bq = 45 * np.eye( model.nq )
 
 kr = 80 
 br =  8
