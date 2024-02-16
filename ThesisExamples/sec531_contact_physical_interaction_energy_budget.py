@@ -116,7 +116,7 @@ R_mat  = [ ]
 R0_mat = [ ]
 
 # Lmax
-Lmax = 10
+Lmax = 15
 
 # Energys
 U1_mat = []

@@ -2186,7 +2186,6 @@ axis equal
 set( a, 'xlim', [-0.2794,0.9169], 'ylim', [-0.44,0.42], 'zlim', [0,0.6121] ) 
 set( a, 'xticklabel', {}, 'yticklabel', {},'zticklabel', {} ,'visible', 'off')
 
-
 % Plotting the robot 
 % Set up the video writer
 delete('videos/task_space_obs_sing.mp4'  )
@@ -2194,12 +2193,9 @@ outputVideo = VideoWriter( 'videos/task_space_obs_sing.mp4', 'MPEG-4' );
 outputVideo.FrameRate = 60;
 open( outputVideo );
 
-
-
 % Time per frame
 numFrames    = round( T*outputVideo.FrameRate*1.5);
 timePerFrame = T / numFrames;
-
 
 for frameIdx = 1:numFrames
 
@@ -2273,7 +2269,7 @@ close( outputVideo );
 close( f );
 
 %% ---- (1g-a) Obstacle Avoidance, Multiple
-
+close all   
 dir = "C:\Users\moses\OneDrive\Documents\GitHub\mujoco-py-v2\ThesisExamples\data\sec521_obstacle_avoidance_mult.mat";
 data = load( dir ); 
 
@@ -2284,26 +2280,26 @@ N_stl = 7;
 
 T = max( data.t_arr );
 T_min = 1.9;
-T_max = T;
+T_max = 7.0;
 
 % For selecing the time step
 Np = length( data.t_arr );
 
-f = figure( ); a = axes( 'parent', f );
+f = figure( ); 
+a = subplot(2, 2, [1,3]);
 hold on; % Keep the figure open to plot the next STL file
-
 
 plot3( a, data.p0_arr( :, 1 ), data.p0_arr( :, 2 ), data.p0_arr( :, 3 ), 'linewidth',4, 'color', 'k', 'linestyle', '-' )
 scatter3( a, 0.1+data.p0_arr( 1, 1 ), data.p0_arr( 1, 2 ), data.p0_arr( 1, 3 ), 500, 'filled', 'markerfacecolor', 'w', 'markeredgecolor', 'k', 'linewidth', 5 );
-r = 0.05;
+r = 0.045;
 [X,Y,Z] = sphere;
 
 X2 = X * r;
 Y2 = Y * r;
 Z2 = Z * r;
-surf(a, X2+data.obs1(1), Y2+data.obs1(2), Z2+data.obs1(3), 'edgecolor', 'k', 'facecolor', 'r', 'edgealpha', 0.2, 'facealpha', 1.0 )
-surf(a, X2+data.obs2(1), Y2+data.obs2(2), Z2+data.obs2(3), 'edgecolor', 'k', 'facecolor', 'g', 'edgealpha', 0.2, 'facealpha', 1.0 )
-surf(a, X2+data.obs3(1), Y2+data.obs3(2), Z2+data.obs3(3), 'edgecolor', 'k', 'facecolor', 'b', 'edgealpha', 0.2, 'facealpha', 1.0 )
+surf(a, X2+data.obs1(1), Y2+data.obs1(2), Z2+data.obs1(3), 'edgecolor', 'k', 'facecolor', 'r', 'edgealpha', 0.2, 'facealpha', 0.6 )
+surf(a, X2+data.obs2(1), Y2+data.obs2(2), Z2+data.obs2(3), 'edgecolor', 'k', 'facecolor', 'g', 'edgealpha', 0.2, 'facealpha', 0.6 )
+surf(a, X2+data.obs3(1), Y2+data.obs3(2), Z2+data.obs3(3), 'edgecolor', 'k', 'facecolor', 'b', 'edgealpha', 0.2, 'facealpha', 0.6 )
 
 scl = 0.05;
 p_goal = data.p0_arr( end, :);
@@ -2323,25 +2319,26 @@ quiver3( a, x, y, z, r3( 1 ), r3( 2 ), r3( 3 ), 'linewidth', 4, 'color', c_tmp3,
 
 
 patches = cell( 1, N_stl );
-
+hgs     = cell( 1, N_stl );
 for i = 1:N_stl
     % Read the STL file
     [ vertices, faces ] = stlread( ['../models/iiwa14/meshes/link_', num2str( i ), '.stl' ] );
 
     % Plot the STL file
-
-    patches{ i } = patch( 'Vertices', vertices.Points, 'Faces', vertices.ConnectivityList, ...
-                         'FaceColor', 0.4*ones( 1, 3), 'EdgeColor', [0.0,0.0,0.0], 'FaceAlpha', 0.4, 'EdgeAlpha', 0.2 );
-
     % Get the position for each-link and update 
     p_tmp = squeeze( data.p_links( 1, i, : ) ); 
     R_tmp = squeeze( data.R_links( 1, i, :, : ) );
     H_tmp = [ R_tmp, p_tmp; 0,0,0,1];
 
-    hg = hgtransform( 'Matrix', H_tmp );
-    set( patches{ i }, 'Parent', hg);
+    hgs{ i } = hgtransform( 'Matrix', H_tmp, 'parent', a );
+
+    patches{ i } = patch( a, 'Vertices', vertices.Points, 'Faces', vertices.ConnectivityList, ...
+                         'FaceColor', 0.4*ones( 1, 3), 'EdgeColor', [0.0,0.0,0.0], 'FaceAlpha', 0.4, 'EdgeAlpha', 0.2 );
+
+    set( patches{ i }, 'Parent', hgs{ i } );
 
 end
+
 
 p_tmp = data.p0_arr( 1, : );
 x = 0.1 + p_tmp( 1 );
@@ -2387,18 +2384,85 @@ light('Position',[1 0 0],'Style','infinite');
 % Update transformation 
 view( [ 90, 0 ] )
 axis equal
-set( a, 'xlim', [-0.2794,0.9169], 'ylim', [-0.44,0.42], 'zlim', [0,0.6121] ) 
+set( a, 'xlim', [-0.26,0.9319], 'ylim', [-0.455,0.435], 'zlim', [0,0.6721] ) 
 set( a, 'xticklabel', {}, 'yticklabel', {},'zticklabel', {} ,'visible', 'off')
+
+a2 = subplot( 2, 2, 2 );
+hold on
+patches1 = cell( 1, N_stl );
+hsg1     = cell( 1, N_stl );
+for i = 1:N_stl
+    % Read the STL file
+    [ vertices, faces ] = stlread( ['../models/iiwa14/meshes/link_', num2str( i ), '.stl' ] );
+
+    % Plot the STL file
+    % Get the position for each-link and update 
+    p_tmp = squeeze( data.p_links( 1, i, : ) ); 
+    R_tmp = squeeze( data.R_links( 1, i, :, : ) );
+    H_tmp = [ R_tmp, p_tmp; 0,0,0,1];
+
+    hgs1{ i } = hgtransform( 'Matrix', H_tmp, 'parent', a2 );
+
+    patches1{ i } = patch( 'Vertices', vertices.Points, 'Faces', vertices.ConnectivityList, ...
+                         'FaceColor', 0.4*ones( 1, 3), 'EdgeColor', [0.0,0.0,0.0], 'FaceAlpha', 0.4, 'EdgeAlpha', 0.2 );
+
+    set( patches1{ i }, 'Parent', hgs1{ i } );
+
+end
+
+surf(a2, X2+data.obs1(1), Y2+data.obs1(2), Z2+data.obs1(3), 'edgecolor', 'k', 'facecolor', 'r', 'edgealpha', 0.2, 'facealpha', 0.6 )
+surf(a2, X2+data.obs2(1), Y2+data.obs2(2), Z2+data.obs2(3), 'edgecolor', 'k', 'facecolor', 'g', 'edgealpha', 0.2, 'facealpha', 0.6 )
+surf(a2, X2+data.obs3(1), Y2+data.obs3(2), Z2+data.obs3(3), 'edgecolor', 'k', 'facecolor', 'b', 'edgealpha', 0.2, 'facealpha', 0.6 )
+
+axis equal
+set( a2, 'xlim', [-0.2794,0.9169], 'ylim', [-0.44,0.42], 'zlim', [0,0.6121] ) 
+set( a2, 'xticklabel', {}, 'yticklabel', {},'zticklabel', {} ,'visible', 'off')
+set( a2, 'view', [162.0901, 18.3132] )
+lighting gouraud
+light('Position',[1 0 0],'Style','infinite');
+
+
+a3 = subplot( 2, 2, 4 );
+hold on
+patches2 = cell( 1, N_stl );
+hsg2     = cell( 1, N_stl );
+for i = 1:N_stl
+    % Read the STL file
+    [ vertices, faces ] = stlread( ['../models/iiwa14/meshes/link_', num2str( i ), '.stl' ] );
+
+    % Plot the STL file
+    % Get the position for each-link and update 
+    p_tmp = squeeze( data.p_links( 1, i, : ) ); 
+    R_tmp = squeeze( data.R_links( 1, i, :, : ) );
+    H_tmp = [ R_tmp, p_tmp; 0,0,0,1];
+
+    hgs2{ i } = hgtransform( 'Matrix', H_tmp, 'parent', a3 );
+
+    patches1{ i } = patch( 'Vertices', vertices.Points, 'Faces', vertices.ConnectivityList, ...
+                         'FaceColor', 0.4*ones( 1, 3), 'EdgeColor', [0.0,0.0,0.0], 'FaceAlpha', 0.4, 'EdgeAlpha', 0.2 );
+
+    set( patches1{ i }, 'Parent', hgs2{ i } );
+
+end
+axis equal
+set( a3, 'xlim', [-0.2794,0.9169], 'ylim', [-0.44,0.42], 'zlim', [0,0.6121] ) 
+set( a3, 'xticklabel', {}, 'yticklabel', {},'zticklabel', {} ,'visible', 'off')
+view(2)
+
+surf(a3, X2+data.obs1(1), Y2+data.obs1(2), Z2+data.obs1(3), 'edgecolor', 'k', 'facecolor', 'r', 'edgealpha', 0.2, 'facealpha', 0.6 )
+surf(a3, X2+data.obs2(1), Y2+data.obs2(2), Z2+data.obs2(3), 'edgecolor', 'k', 'facecolor', 'g', 'edgealpha', 0.2, 'facealpha', 0.6 )
+surf(a3, X2+data.obs3(1), Y2+data.obs3(2), Z2+data.obs3(3), 'edgecolor', 'k', 'facecolor', 'b', 'edgealpha', 0.2, 'facealpha', 0.6 )
+
+lighting gouraud
+light('Position',[1 0 0],'Style','infinite');
 
 
 % Plotting the robot 
 % Set up the video writer
-delete('videos/task_space_obs_sing.mp4'  )
-outputVideo = VideoWriter( 'videos/task_space_obs_sing.mp4', 'MPEG-4' );
+delete('videos/task_space_obs_mult.mp4'  )
+outputVideo = VideoWriter( 'videos/task_space_obs_mult.mp4', 'MPEG-4' );
 outputVideo.FrameRate = 60;
 open( outputVideo );
-
-
 
 % Time per frame
 numFrames    = round( T*outputVideo.FrameRate*1.5);
@@ -2424,9 +2488,9 @@ for frameIdx = 1:numFrames
         R_tmp = squeeze( data.R_links( iidx, i, :, : ) );
         H_tmp = [ R_tmp, p_tmp; 0,0,0,1];
     
-        hg = hgtransform( 'Matrix', H_tmp );
-        set( patches{ i }, 'Parent', hg);
-
+        set( hgs{ i }, 'Matrix', H_tmp);
+        set( hgs1{ i }, 'Matrix', H_tmp);        
+        set( hgs2{ i }, 'Matrix', H_tmp);        
     end
     
     p_tmp = data.p_arr( iidx, : );
@@ -2478,6 +2542,612 @@ close( f );
 
 
 %% ---- (1h) Managing Contact and Physical Interaction
+close all   
+dir   = "C:\Users\moses\OneDrive\Documents\GitHub\mujoco-py-v2\ThesisExamples\data\sec531_contact_mod.mat";
+dir2  = "C:\Users\moses\OneDrive\Documents\GitHub\mujoco-py-v2\ThesisExamples\data\sec531_contact.mat";
+data  = load( dir  ); 
+data2 = load( dir2 ); 
+
+c_tmp1 = [0.6350 0.0780 0.1840];
+c_tmp2 = [0.0000 0.4470 0.7410];
+c_tmp3 = [0.4660 0.6740 0.1880];
+N_stl = 7;
+
+T = max( data.t_arr );
+T_min = 1.95;
+T_max = 8.0;
+
+% For selecing the time step
+Np = length( data.t_arr );
+
+f = figure( ); 
+a = subplot(2, 2, [1,3]);
+hold on; % Keep the figure open to plot the next STL file
+
+r = 0.048;
+[X,Y,Z] = sphere;
+X2  = X * r;
+Y2  = Y * r;
+Z2  = Z * r;
+pii = data.p_arr( 1, : ); 
+pii( 2 ) = 0;
+surf(a, X2 + pii( 1 ),Y2 + pii(2), Z2 + pii( 3 ), 'FaceColor', 'r', 'edgecolor', 'k', 'facealpha', 0.8, 'edgealpha', 0.2  )
 
 
+plot3( a, data.p0_arr( :, 1 ), data.p0_arr( :, 2 ), data.p0_arr( :, 3 ), 'linewidth',4, 'color', 'k', 'linestyle', '-' )
+scatter3( a, 0.1+data.p0_arr( 1, 1 ), data.p0_arr( 1, 2 ), data.p0_arr( 1, 3 ), 500, 'filled', 'markerfacecolor', 'w', 'markeredgecolor', 'k', 'linewidth', 5 );
 
+scl = 0.05;
+p_goal = data.p0_arr( end, :);
+x = 0.1 + p_goal( 1 );
+y =       p_goal( 2 );
+z =       p_goal( 3 );
+R_goal = squeeze( data.R0_arr( end , :, : ) );
+
+r1 = 2*scl * R_goal( :, 1 );
+r2 = 2*scl * R_goal( :, 2 );
+r3 = 2*scl * R_goal( :, 3 );
+
+g_goal = scatter3( a, x, y, z, 300, 'filled', 'd', 'markerfacecolor', c_tmp1, 'markeredgecolor', 'k', 'linewidth', 5 );
+quiver3( a, x, y, z, r1( 1 ), r1( 2 ), r1( 3 ), 'linewidth', 4, 'color', c_tmp3, 'MaxHeadSize',0.6 );
+quiver3( a, x, y, z, r2( 1 ), r2( 2 ), r2( 3 ), 'linewidth', 4, 'color', c_tmp3, 'MaxHeadSize',0.6 );
+quiver3( a, x, y, z, r3( 1 ), r3( 2 ), r3( 3 ), 'linewidth', 4, 'color', c_tmp3, 'MaxHeadSize',0.6 );
+
+
+patches = cell( 1, N_stl );
+hgs     = cell( 1, N_stl );
+for i = 1:N_stl
+    % Read the STL file
+    [ vertices, faces ] = stlread( ['../models/iiwa14/meshes/link_', num2str( i ), '.stl' ] );
+
+    % Plot the STL file
+    % Get the position for each-link and update 
+    p_tmp = squeeze( data.p_links( 1, i, : ) ); 
+    R_tmp = squeeze( data.R_links( 1, i, :, : ) );
+    H_tmp = [ R_tmp, p_tmp; 0,0,0,1];
+
+    hgs{ i } = hgtransform( 'Matrix', H_tmp, 'parent', a );
+
+    patches{ i } = patch( a, 'Vertices', vertices.Points, 'Faces', vertices.ConnectivityList, ...
+                         'FaceColor', 0.4*ones( 1, 3), 'EdgeColor', [0.0,0.0,0.0], 'FaceAlpha', 0.4, 'EdgeAlpha', 0.2 );
+
+    set( patches{ i }, 'Parent', hgs{ i } );
+
+end
+
+
+patches0 = cell( 1, N_stl );
+hgs0     = cell( 1, N_stl );
+for i = 1:N_stl
+    % Read the STL file
+    [ vertices, faces ] = stlread( ['../models/iiwa14/meshes/link_', num2str( i ), '.stl' ] );
+
+    % Plot the STL file
+    % Get the position for each-link and update 
+    p_tmp = squeeze( data2.p_links( 1, i, : ) ); 
+    R_tmp = squeeze( data2.R_links( 1, i, :, : ) );
+    H_tmp = [ R_tmp, p_tmp; 0,0,0,1];
+
+    hgs0{ i } = hgtransform( 'Matrix', H_tmp, 'parent', a );
+
+    patches0{ i } = patch( a, 'Vertices', vertices.Points, 'Faces', vertices.ConnectivityList, ...
+                         'FaceColor', 0.4*ones( 1, 3), 'EdgeColor', [0.0,0.0,0.0], 'FaceAlpha', 0.2, 'EdgeAlpha', 0.0 );
+
+    set( patches0{ i }, 'Parent', hgs0{ i } );
+
+end
+
+
+p_tmp = data.p0_arr( 1, : );
+x = 0.1 + p_tmp( 1 );
+y =       p_tmp( 2 );
+z =       p_tmp( 3 );
+R_tmp = squeeze( data.R0_arr( 1 , :, : ) );
+
+r1 = 2*scl * R_tmp( :, 1 );
+r2 = 2*scl * R_tmp( :, 2 );
+r3 = 2*scl * R_tmp( :, 3 );
+
+g1_p0 = scatter3( a, x, y, z, 300, 'filled', 'markerfacecolor', c_tmp1, 'markeredgecolor', 'k', 'linewidth', 5 );
+g1_x0 = quiver3( a, x, y, z, r1( 1 ), r1( 2 ), r1( 3 ), 'linewidth', 4, 'color', c_tmp3, 'MaxHeadSize',0.6 );
+g1_y0 = quiver3( a, x, y, z, r2( 1 ), r2( 2 ), r2( 3 ), 'linewidth', 4, 'color', c_tmp3, 'MaxHeadSize',0.6 );
+g1_z0 = quiver3( a, x, y, z, r3( 1 ), r3( 2 ), r3( 3 ), 'linewidth', 4, 'color', c_tmp3, 'MaxHeadSize',0.6 );
+
+
+% Adding the markers and also orientation
+p_tmp = data.p_arr( 1, : );
+x = 0.1 + p_tmp( 1 );
+y =       p_tmp( 2 );
+z =       p_tmp( 3 );
+
+scl = 0.05;
+R_tmp = squeeze( data.R_arr( 1 , :, : ) );
+
+r1 = scl * R_tmp( :, 1 );
+r2 = scl * R_tmp( :, 2 );
+r3 = scl * R_tmp( :, 3 );
+
+g1_p = scatter3( a, x, y, z, 500, 'filled', 'markerfacecolor', 'w', 'markeredgecolor', 'k', 'linewidth', 5 );
+g1_x = quiver3( a, x, y, z, r1( 1 ), r1( 2 ), r1( 3 ), 'linewidth', 8, 'color', 'r', 'MaxHeadSize',1.0 );
+g1_y = quiver3( a, x, y, z, r2( 1 ), r2( 2 ), r2( 3 ), 'linewidth', 8, 'color', 'g', 'MaxHeadSize',1.0 );
+g1_z = quiver3( a, x, y, z, r3( 1 ), r3( 2 ), r3( 3 ), 'linewidth', 8, 'color', 'b', 'MaxHeadSize',1.0   );
+
+
+lighting gouraud
+light('Position',[1 0 0],'Style','infinite');
+
+% plot3( a, data.p0_arr( :, 1 ), data.p0_arr( :, 2 ), data.p0_arr( :, 3 ), 'linewidth', 5, 'color', 'k', 'linestyle', '--' )
+% plot3( a, data.p_arr(  :, 1 ), data.p_arr(  :, 2 ), data.p_arr(  :, 3 ), 'linewidth', 10, 'color', 'k', 'linestyle', '-' )
+
+% Update transformation 
+view( [ 90, 0 ] )
+axis equal
+set( a, 'xlim', [-0.26,0.9319], 'ylim', [-0.455,0.435], 'zlim', [0,0.6721] ) 
+set( a, 'xticklabel', {}, 'yticklabel', {},'zticklabel', {} ,'visible', 'off')
+
+a2 = subplot( 2, 2, 2); set( a2, 'parent', f );
+hold on
+Ene     = data2.kin_mat + data2.U1_mat + data2.U2_mat; 
+Ene_mod = data.kin_mat + double( data.gain_mat ).*( data.U1_mat + data.U2_mat );
+
+plot( a2, data.t_arr, Ene_mod, 'linewidth', 5, 'color', 'k' )
+plot( a2, data2.t_arr, Ene, 'linewidth', 10, 'color', 'k', 'linestyle', ':' )
+p1 = scatter( a2, data.t_arr( 1 ), Ene_mod( 1 ), 500, 'filled', 'o', 'markerfacecolor', 'w', 'markeredgecolor', 'k', 'linewidth', 3 );
+p2 = scatter( a2, data2.t_arr( 1 ), Ene( 1 ), 250, 'filled', 'o', 'markerfacecolor', 'w', 'markeredgecolor', 'k', 'linewidth', 3 );
+set( a2, 'xlim', [T_min, T_max ], 'fontsize', 40, 'xticklabel', {} )
+ylabel( a2, 'Total Energy (J)')
+
+a3 = subplot( 2, 2, 4); set( a3, 'parent', f );
+hold on
+
+plot( a3, data2.t_arr, data.gain_mat, 'linewidth', 5, 'color', 'k', 'linestyle', '-' )
+plot( a3, data2.t_arr, ones( 1, length( data2.t_arr ) ), 'linewidth', 3, 'color', 'k', 'linestyle', ':' )
+
+p3 = scatter( a3, data2.t_arr(1), data.gain_mat(1), 500, 'filled', 'o', 'markerfacecolor', 'w', 'markeredgecolor', 'k', 'linewidth', 3 );
+
+% Hexagon properties
+numSides = 6; % Hexagon has 6 sides
+radius = 0.3; % Radius of the circle in which the hexagon is inscribed
+center = [6, 0.4]; % Center of the hexagon
+
+% Generate vertices
+theta = linspace(0, 2*pi, numSides+1); % +1 to close the hexagon
+x = center(1) + radius * cos(theta);
+y = center(2) + radius * sin(theta);
+
+% Plot filled hexagon
+module1 = patch( a3, x, y, c_tmp1); 
+module2 = patch( a3, x+2*radius+0.1, y, c_tmp2); 
+module3 = patch( a3, x+4*radius+0.2, y, c_tmp3); 
+
+axis equal 
+set( a3, 'xlim', [T_min, T_max ], 'ylim', [0, 1.2], 'fontsize', 40 )
+xlabel(a3, '$t$ (s)')
+ylabel(a3, '$\lambda(t)$ (s)')
+
+% Plotting the robot 
+% Set up the video writer
+delete('videos/task_space_manage_contact.mp4'  )
+outputVideo = VideoWriter( 'videos/task_space_manage_contact.mp4', 'MPEG-4' );
+outputVideo.FrameRate = 60;
+open( outputVideo );
+
+% Time per frame
+numFrames    = round( T*outputVideo.FrameRate*1.5);
+timePerFrame = T / numFrames;
+
+
+for frameIdx = 1:numFrames
+
+    % Current time for this frame
+    currentTime = (frameIdx - 1) * timePerFrame;
+
+    if currentTime <= T_min
+        continue
+    end
+
+    % Find the closest time in your timeArray (or interpolate if needed)
+    [~,  iidx ] = min( abs( data.t_arr - currentTime ) );
+
+    for i = 1 : 7
+
+        % Get the position for each-link and update 
+        p_tmp = squeeze( data.p_links( iidx, i, : ) ); 
+        R_tmp = squeeze( data.R_links( iidx, i, :, : ) );
+        H_tmp = [ R_tmp, p_tmp; 0,0,0,1];
+    
+        set( hgs{ i }, 'Matrix', H_tmp);
+
+        % Get the position for each-link and update 
+        p_tmp = squeeze( data2.p_links( iidx, i, : ) ); 
+        R_tmp = squeeze( data2.R_links( iidx, i, :, : ) );
+        H_tmp = [ R_tmp, p_tmp; 0,0,0,1];
+    
+        set( hgs0{ i }, 'Matrix', H_tmp);        
+   
+    end
+    
+    p_tmp = data.p_arr( iidx, : );
+    p_tmp( 1 ) = p_tmp( 1 ) + 0.1;
+    R_tmp = squeeze( data.R_arr( iidx, :, : ) );
+
+    r1 = scl * R_tmp( :, 1 );
+    r2 = scl * R_tmp( :, 2 );
+    r3 = scl * R_tmp( :, 3 );
+
+    set( g1_p, 'Xdata', p_tmp( 1 ), 'Ydata', p_tmp( 2 ), 'Zdata', p_tmp( 3 )  )
+    set( g1_x, 'Xdata', p_tmp( 1 ), 'Ydata', p_tmp( 2 ), 'Zdata', p_tmp( 3 ), 'UData', r1( 1 ), 'VData', r1( 2 ), 'WData', r1( 3 ) )
+    set( g1_y, 'Xdata', p_tmp( 1 ), 'Ydata', p_tmp( 2 ), 'Zdata', p_tmp( 3 ), 'UData', r2( 1 ), 'VData', r2( 2 ), 'WData', r2( 3 ) )
+    set( g1_z, 'Xdata', p_tmp( 1 ), 'Ydata', p_tmp( 2 ), 'Zdata', p_tmp( 3 ), 'UData', r3( 1 ), 'VData', r3( 2 ), 'WData', r3( 3 ) )
+
+    p_tmp = data.p0_arr( iidx, : );
+    p_tmp( 1 ) = p_tmp( 1 ) + 0.1;
+    R_tmp = squeeze( data.R0_arr( iidx, :, : ) );
+
+    r1 = 2*scl * R_tmp( :, 1 );
+    r2 = 2*scl * R_tmp( :, 2 );
+    r3 = 2*scl * R_tmp( :, 3 );
+
+    set( g1_p0, 'Xdata', p_tmp( 1 ), 'Ydata', p_tmp( 2 ), 'Zdata', p_tmp( 3 )  )
+    set( g1_x0, 'Xdata', p_tmp( 1 ), 'Ydata', p_tmp( 2 ), 'Zdata', p_tmp( 3 ), 'UData', r1( 1 ), 'VData', r1( 2 ), 'WData', r1( 3 ) )
+    set( g1_y0, 'Xdata', p_tmp( 1 ), 'Ydata', p_tmp( 2 ), 'Zdata', p_tmp( 3 ), 'UData', r2( 1 ), 'VData', r2( 2 ), 'WData', r2( 3 ) )
+    set( g1_z0, 'Xdata', p_tmp( 1 ), 'Ydata', p_tmp( 2 ), 'Zdata', p_tmp( 3 ), 'UData', r3( 1 ), 'VData', r3( 2 ), 'WData', r3( 3 ) )
+
+    set( p1, 'Xdata', data.t_arr( iidx ), 'Ydata', Ene_mod( iidx ) )
+    set( p2, 'Xdata', data2.t_arr( iidx ), 'Ydata', Ene( iidx ) )
+    set( p3, 'Xdata', data2.t_arr( iidx ), 'YData', data.gain_mat( iidx ) )
+
+
+    set( module2, 'facealpha', data.gain_mat( iidx ) )
+    set( module3, 'facealpha', data.gain_mat( iidx ) )
+
+    currentTime
+
+    % Capture frame
+    frame = getframe( f );
+    
+    % Write frame to video
+    writeVideo( outputVideo, frame );
+
+    if currentTime >= T_max
+        break;
+    end
+
+end
+
+
+% Close the video file
+close( outputVideo );
+
+% Optionally, close the figure
+close( f );
+
+%% ---- (1h) Managing Contact and Physical Interaction while Avoiding Obstacle
+
+close all   
+dir   = "C:\Users\moses\OneDrive\Documents\GitHub\mujoco-py-v2\ThesisExamples\data\sec531_energy_budget_obs_avoid.mat";
+dir2  = "C:\Users\moses\OneDrive\Documents\GitHub\mujoco-py-v2\ThesisExamples\data\sec521_obstacle_avoidance_mult.mat";
+data  = load( dir  ); 
+data2 = load( dir2 ); 
+
+c_tmp1 = [0.6350 0.0780 0.1840];
+c_tmp2 = [0.0000 0.4470 0.7410];
+c_tmp3 = [0.4660 0.6740 0.1880];
+N_stl = 7;
+
+T = max( data.t_arr );
+T_min = 1.9;
+T_max = 7.0;
+
+% For selecing the time step
+Np = length( data.t_arr );
+
+f = figure( ); 
+a = subplot(2, 2, [1,3]);
+hold on; % Keep the figure open to plot the next STL file
+
+plot3( a, data.p0_arr( :, 1 ), data.p0_arr( :, 2 ), data.p0_arr( :, 3 ), 'linewidth',4, 'color', 'k', 'linestyle', '-' )
+scatter3( a, 0.1+data.p0_arr( 1, 1 ), data.p0_arr( 1, 2 ), data.p0_arr( 1, 3 ), 500, 'filled', 'markerfacecolor', 'w', 'markeredgecolor', 'k', 'linewidth', 5 );
+r = 0.045;
+[X,Y,Z] = sphere;
+
+X2 = X * r;
+Y2 = Y * r;
+Z2 = Z * r;
+surf(a, X2+data.obs1(1), Y2+data.obs1(2), Z2+data.obs1(3), 'edgecolor', 'k', 'facecolor', 'r', 'edgealpha', 0.2, 'facealpha', 0.6 )
+surf(a, X2+data.obs2(1), Y2+data.obs2(2), Z2+data.obs2(3), 'edgecolor', 'k', 'facecolor', 'g', 'edgealpha', 0.2, 'facealpha', 0.6 )
+surf(a, X2+data.obs3(1), Y2+data.obs3(2), Z2+data.obs3(3), 'edgecolor', 'k', 'facecolor', 'b', 'edgealpha', 0.2, 'facealpha', 0.6 )
+
+scl = 0.05;
+p_goal = data.p0_arr( end, :);
+x = 0.1 + p_goal( 1 );
+y =       p_goal( 2 );
+z =       p_goal( 3 );
+R_goal = squeeze( data.R0_arr( end , :, : ) );
+
+r1 = 2*scl * R_goal( :, 1 );
+r2 = 2*scl * R_goal( :, 2 );
+r3 = 2*scl * R_goal( :, 3 );
+
+g_goal = scatter3( a, x, y, z, 300, 'filled', 'd', 'markerfacecolor', c_tmp1, 'markeredgecolor', 'k', 'linewidth', 5 );
+quiver3( a, x, y, z, r1( 1 ), r1( 2 ), r1( 3 ), 'linewidth', 4, 'color', c_tmp3, 'MaxHeadSize',0.6 );
+quiver3( a, x, y, z, r2( 1 ), r2( 2 ), r2( 3 ), 'linewidth', 4, 'color', c_tmp3, 'MaxHeadSize',0.6 );
+quiver3( a, x, y, z, r3( 1 ), r3( 2 ), r3( 3 ), 'linewidth', 4, 'color', c_tmp3, 'MaxHeadSize',0.6 );
+
+
+patches = cell( 2, N_stl );
+hgs     = cell( 2, N_stl );
+for i = 1:N_stl
+    % Read the STL file
+    [ vertices, faces ] = stlread( ['../models/iiwa14/meshes/link_', num2str( i ), '.stl' ] );
+
+    % Plot the STL file
+    % Get the position for each-link and update 
+    p_tmp = squeeze( data.p_links( 1, i, : ) ); 
+    R_tmp = squeeze( data.R_links( 1, i, :, : ) );
+    H_tmp = [ R_tmp, p_tmp; 0,0,0,1];
+
+    hgs{ 1,i } = hgtransform( 'Matrix', H_tmp, 'parent', a );
+
+    patches{ 1,i } = patch( a, 'Vertices', vertices.Points, 'Faces', vertices.ConnectivityList, ...
+                         'FaceColor', 0.4*ones( 1, 3), 'EdgeColor', [0.0,0.0,0.0], 'FaceAlpha', 0.4, 'EdgeAlpha', 0.2 );
+
+    % Plot the STL file
+    % Get the position for each-link and update 
+    p_tmp = squeeze( data2.p_links( 1, i, : ) ); 
+    R_tmp = squeeze( data2.R_links( 1, i, :, : ) );
+    H_tmp = [ R_tmp, p_tmp; 0,0,0,1];
+    
+    hgs{ 2,i } = hgtransform( 'Matrix', H_tmp, 'parent', a );
+
+    patches{ 2,i } = patch( a, 'Vertices', vertices.Points, 'Faces', vertices.ConnectivityList, ...
+                         'FaceColor', 0.4*ones( 1, 3), 'EdgeColor', [0.0,0.0,0.0], 'FaceAlpha', 0.2, 'EdgeAlpha', 0.0 );    
+
+    set( patches{ 1,i }, 'Parent', hgs{ 1,i } );
+    set( patches{ 2,i }, 'Parent', hgs{ 2,i } );
+
+end
+
+
+p_tmp = data.p0_arr( 1, : );
+x = 0.1 + p_tmp( 1 );
+y =       p_tmp( 2 );
+z =       p_tmp( 3 );
+R_tmp = squeeze( data.R0_arr( 1 , :, : ) );
+
+r1 = 2*scl * R_tmp( :, 1 );
+r2 = 2*scl * R_tmp( :, 2 );
+r3 = 2*scl * R_tmp( :, 3 );
+
+g1_p0 = scatter3( a, x, y, z, 300, 'filled', 'markerfacecolor', c_tmp1, 'markeredgecolor', 'k', 'linewidth', 5 );
+g1_x0 = quiver3( a, x, y, z, r1( 1 ), r1( 2 ), r1( 3 ), 'linewidth', 4, 'color', c_tmp3, 'MaxHeadSize',0.6 );
+g1_y0 = quiver3( a, x, y, z, r2( 1 ), r2( 2 ), r2( 3 ), 'linewidth', 4, 'color', c_tmp3, 'MaxHeadSize',0.6 );
+g1_z0 = quiver3( a, x, y, z, r3( 1 ), r3( 2 ), r3( 3 ), 'linewidth', 4, 'color', c_tmp3, 'MaxHeadSize',0.6 );
+
+
+% Adding the markers and also orientation
+p_tmp = data.p_arr( 1, : );
+x = 0.1 + p_tmp( 1 );
+y =       p_tmp( 2 );
+z =       p_tmp( 3 );
+
+scl = 0.05;
+R_tmp = squeeze( data.R_arr( 1 , :, : ) );
+
+r1 = scl * R_tmp( :, 1 );
+r2 = scl * R_tmp( :, 2 );
+r3 = scl * R_tmp( :, 3 );
+
+g1_p = scatter3( a, x, y, z, 500, 'filled', 'markerfacecolor', 'w', 'markeredgecolor', 'k', 'linewidth', 5 );
+g1_x = quiver3( a, x, y, z, r1( 1 ), r1( 2 ), r1( 3 ), 'linewidth', 8, 'color', 'r', 'MaxHeadSize',1.0 );
+g1_y = quiver3( a, x, y, z, r2( 1 ), r2( 2 ), r2( 3 ), 'linewidth', 8, 'color', 'g', 'MaxHeadSize',1.0 );
+g1_z = quiver3( a, x, y, z, r3( 1 ), r3( 2 ), r3( 3 ), 'linewidth', 8, 'color', 'b', 'MaxHeadSize',1.0   );
+
+
+lighting gouraud
+light('Position',[1 0 0],'Style','infinite');
+
+% plot3( a, data.p0_arr( :, 1 ), data.p0_arr( :, 2 ), data.p0_arr( :, 3 ), 'linewidth', 5, 'color', 'k', 'linestyle', '--' )
+% plot3( a, data.p_arr(  :, 1 ), data.p_arr(  :, 2 ), data.p_arr(  :, 3 ), 'linewidth', 10, 'color', 'k', 'linestyle', '-' )
+
+% Update transformation 
+view( [ 90, 0 ] )
+axis equal
+set( a, 'xlim', [-0.26,0.9319], 'ylim', [-0.455,0.435], 'zlim', [0,0.6721] ) 
+set( a, 'xticklabel', {}, 'yticklabel', {},'zticklabel', {} ,'visible', 'off')
+
+a2 = subplot( 2, 2, 2 );
+hold on
+patches1 = cell( 2, N_stl );
+hgs1     = cell( 2, N_stl );
+for i = 1:N_stl
+    % Read the STL file
+    [ vertices, faces ] = stlread( ['../models/iiwa14/meshes/link_', num2str( i ), '.stl' ] );
+
+    % Plot the STL file
+    % Get the position for each-link and update 
+    p_tmp = squeeze( data.p_links( 1, i, : ) ); 
+    R_tmp = squeeze( data.R_links( 1, i, :, : ) );
+    H_tmp = [ R_tmp, p_tmp; 0,0,0,1];
+
+    hgs1{ 1, i } = hgtransform( 'Matrix', H_tmp, 'parent', a2 );
+
+    patches1{ 1, i } = patch( 'Vertices', vertices.Points, 'Faces', vertices.ConnectivityList, ...
+                         'FaceColor', 0.4*ones( 1, 3), 'EdgeColor', [0.0,0.0,0.0], 'FaceAlpha', 0.4, 'EdgeAlpha', 0.2 );
+
+    set( patches1{ 1, i }, 'Parent', hgs1{ 1,i } );
+
+
+    % Plot the STL file
+    % Get the position for each-link and update 
+    p_tmp = squeeze( data2.p_links( 1, i, : ) ); 
+    R_tmp = squeeze( data2.R_links( 1, i, :, : ) );
+    H_tmp = [ R_tmp, p_tmp; 0,0,0,1];
+    
+    hgs1{ 2,i } = hgtransform( 'Matrix', H_tmp, 'parent', a2 );
+
+    patches1{ 2,i } = patch( 'Vertices', vertices.Points, 'Faces', vertices.ConnectivityList, ...
+                         'FaceColor', 0.4*ones( 1, 3), 'EdgeColor', [0.0,0.0,0.0], 'FaceAlpha', 0.2, 'EdgeAlpha', 0.0 );    
+
+    set( patches1{ 1,i }, 'Parent', hgs1{ 1,i } );
+    set( patches1{ 2,i }, 'Parent', hgs1{ 2,i } );    
+
+end
+
+surf(a2, X2+data.obs1(1), Y2+data.obs1(2), Z2+data.obs1(3), 'edgecolor', 'k', 'facecolor', 'r', 'edgealpha', 0.2, 'facealpha', 0.6 )
+surf(a2, X2+data.obs2(1), Y2+data.obs2(2), Z2+data.obs2(3), 'edgecolor', 'k', 'facecolor', 'g', 'edgealpha', 0.2, 'facealpha', 0.6 )
+surf(a2, X2+data.obs3(1), Y2+data.obs3(2), Z2+data.obs3(3), 'edgecolor', 'k', 'facecolor', 'b', 'edgealpha', 0.2, 'facealpha', 0.6 )
+
+axis equal
+set( a2, 'xlim', [-0.2794,0.9169], 'ylim', [-0.44,0.42], 'zlim', [0,0.6121] ) 
+set( a2, 'xticklabel', {}, 'yticklabel', {},'zticklabel', {} ,'visible', 'off')
+set( a2, 'view', [162.0901, 18.3132] )
+lighting gouraud
+light('Position',[1 0 0],'Style','infinite');
+
+
+a3 = subplot( 2, 2, 4 );
+hold on
+patches2 = cell( 2, N_stl );
+hgs2     = cell( 2, N_stl );
+for i = 1:N_stl
+    % Read the STL file
+    [ vertices, faces ] = stlread( ['../models/iiwa14/meshes/link_', num2str( i ), '.stl' ] );
+
+    % Plot the STL file
+    % Get the position for each-link and update 
+    p_tmp = squeeze( data.p_links( 1, i, : ) ); 
+    R_tmp = squeeze( data.R_links( 1, i, :, : ) );
+    H_tmp = [ R_tmp, p_tmp; 0,0,0,1];
+
+    hgs2{ 1,i } = hgtransform( 'Matrix', H_tmp, 'parent', a3 );
+
+    patches2{ 1,i } = patch( 'Vertices', vertices.Points, 'Faces', vertices.ConnectivityList, ...
+                         'FaceColor', 0.4*ones( 1, 3), 'EdgeColor', [0.0,0.0,0.0], 'FaceAlpha', 0.4, 'EdgeAlpha', 0.2 );
+
+    set( patches2{ i }, 'Parent', hgs2{ i } );
+
+    % Plot the STL file
+    % Get the position for each-link and update 
+    p_tmp = squeeze( data2.p_links( 1, i, : ) ); 
+    R_tmp = squeeze( data2.R_links( 1, i, :, : ) );
+    H_tmp = [ R_tmp, p_tmp; 0,0,0,1];
+    
+    hgs2{ 2,i } = hgtransform( 'Matrix', H_tmp, 'parent', a3 );
+
+    patches2{ 2,i } = patch( 'Vertices', vertices.Points, 'Faces', vertices.ConnectivityList, ...
+                         'FaceColor', 0.4*ones( 1, 3), 'EdgeColor', [0.0,0.0,0.0], 'FaceAlpha', 0.2, 'EdgeAlpha', 0.0 );    
+
+    set( patches2{ 1,i }, 'Parent', hgs2{ 1,i } );
+    set( patches2{ 2,i }, 'Parent', hgs2{ 2,i } );    
+
+end
+axis equal
+set( a3, 'xlim', [-0.2794,0.9169], 'ylim', [-0.44,0.42], 'zlim', [0,0.6121] ) 
+set( a3, 'xticklabel', {}, 'yticklabel', {},'zticklabel', {} ,'visible', 'off')
+view(2)
+
+surf(a3, X2+data.obs1(1), Y2+data.obs1(2), Z2+data.obs1(3), 'edgecolor', 'k', 'facecolor', 'r', 'edgealpha', 0.2, 'facealpha', 0.6 )
+surf(a3, X2+data.obs2(1), Y2+data.obs2(2), Z2+data.obs2(3), 'edgecolor', 'k', 'facecolor', 'g', 'edgealpha', 0.2, 'facealpha', 0.6 )
+surf(a3, X2+data.obs3(1), Y2+data.obs3(2), Z2+data.obs3(3), 'edgecolor', 'k', 'facecolor', 'b', 'edgealpha', 0.2, 'facealpha', 0.6 )
+
+lighting gouraud
+light('Position',[1 0 0],'Style','infinite');
+
+% Plotting the robot 
+% Set up the video writer
+delete('videos/task_space_obs_mult_while_modulation.mp4'  )
+outputVideo = VideoWriter( 'videos/task_space_obs_mult_while_modulation.mp4', 'MPEG-4' );
+outputVideo.FrameRate = 60;
+open( outputVideo );
+
+% Time per frame
+numFrames    = round( T*outputVideo.FrameRate*1.5);
+timePerFrame = T / numFrames;
+
+
+for frameIdx = 1:numFrames
+
+    % Current time for this frame
+    currentTime = (frameIdx - 1) * timePerFrame;
+
+    if currentTime <= T_min
+        continue
+    end
+
+    % Find the closest time in your timeArray (or interpolate if needed)
+    [~,  iidx ] = min( abs( data.t_arr - currentTime ) );
+
+    for i = 1 : 7
+
+        % Get the position for each-link and update 
+        p_tmp = squeeze( data.p_links( iidx, i, : ) ); 
+        R_tmp = squeeze( data.R_links( iidx, i, :, : ) );
+        H_tmp = [ R_tmp, p_tmp; 0,0,0,1];
+        
+        set( hgs{ 1, i }, 'Matrix', H_tmp);
+        set( hgs1{ 1, i }, 'Matrix', H_tmp);        
+        set( hgs2{ 1, i }, 'Matrix', H_tmp);        
+
+        % Get the position for each-link and update 
+        p_tmp = squeeze( data2.p_links( iidx, i, : ) ); 
+        R_tmp = squeeze( data2.R_links( iidx, i, :, : ) );
+        H_tmp = [ R_tmp, p_tmp; 0,0,0,1];
+        
+        set( hgs{ 2, i }, 'Matrix', H_tmp);
+        set( hgs1{ 2, i }, 'Matrix', H_tmp);        
+        set( hgs2{ 2, i }, 'Matrix', H_tmp);                
+    end
+    
+    p_tmp = data.p_arr( iidx, : );
+    p_tmp( 1 ) = p_tmp( 1 ) + 0.1;
+    R_tmp = squeeze( data.R_arr( iidx, :, : ) );
+
+    r1 = scl * R_tmp( :, 1 );
+    r2 = scl * R_tmp( :, 2 );
+    r3 = scl * R_tmp( :, 3 );
+
+    set( g1_p, 'Xdata', p_tmp( 1 ), 'Ydata', p_tmp( 2 ), 'Zdata', p_tmp( 3 )  )
+    set( g1_x, 'Xdata', p_tmp( 1 ), 'Ydata', p_tmp( 2 ), 'Zdata', p_tmp( 3 ), 'UData', r1( 1 ), 'VData', r1( 2 ), 'WData', r1( 3 ) )
+    set( g1_y, 'Xdata', p_tmp( 1 ), 'Ydata', p_tmp( 2 ), 'Zdata', p_tmp( 3 ), 'UData', r2( 1 ), 'VData', r2( 2 ), 'WData', r2( 3 ) )
+    set( g1_z, 'Xdata', p_tmp( 1 ), 'Ydata', p_tmp( 2 ), 'Zdata', p_tmp( 3 ), 'UData', r3( 1 ), 'VData', r3( 2 ), 'WData', r3( 3 ) )
+
+    p_tmp = data.p0_arr( iidx, : );
+    p_tmp( 1 ) = p_tmp( 1 ) + 0.1;
+    R_tmp = squeeze( data.R0_arr( iidx, :, : ) );
+
+    r1 = 2*scl * R_tmp( :, 1 );
+    r2 = 2*scl * R_tmp( :, 2 );
+    r3 = 2*scl * R_tmp( :, 3 );
+
+    set( g1_p0, 'Xdata', p_tmp( 1 ), 'Ydata', p_tmp( 2 ), 'Zdata', p_tmp( 3 )  )
+    set( g1_x0, 'Xdata', p_tmp( 1 ), 'Ydata', p_tmp( 2 ), 'Zdata', p_tmp( 3 ), 'UData', r1( 1 ), 'VData', r1( 2 ), 'WData', r1( 3 ) )
+    set( g1_y0, 'Xdata', p_tmp( 1 ), 'Ydata', p_tmp( 2 ), 'Zdata', p_tmp( 3 ), 'UData', r2( 1 ), 'VData', r2( 2 ), 'WData', r2( 3 ) )
+    set( g1_z0, 'Xdata', p_tmp( 1 ), 'Ydata', p_tmp( 2 ), 'Zdata', p_tmp( 3 ), 'UData', r3( 1 ), 'VData', r3( 2 ), 'WData', r3( 3 ) )
+
+    currentTime
+
+    % Capture frame
+    frame = getframe( f );
+    
+    % Write frame to video
+    writeVideo( outputVideo, frame );
+
+    if currentTime >= T_max
+        break;
+    end
+
+end
+
+
+% Close the video file
+close( outputVideo );
+
+% Optionally, close the figure
+close( f );
+
+% Close the video file
+close( outputVideo );
+
+% Optionally, close the figure
+close( f );
