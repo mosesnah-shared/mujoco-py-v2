@@ -6,7 +6,7 @@ from scipy.io import savemat
 
 # Call the model + data for MuJoco
 dir_name   = './models/my_robots/'
-robot_name = '2DOF_slider.xml'
+robot_name = '2DOF_slider_hang.xml'
 model = mujoco.MjModel.from_xml_path( dir_name + robot_name )
 data  = mujoco.MjData( model )
 
@@ -54,6 +54,9 @@ Jr = np.zeros( ( 3, nq ) )
 mujoco.mj_jacSite( model, data, Jp, Jr, id_site1 )
 
 # The joint position and velocity, with the velocity of the first geometry
+data.qpos[ 0 ] = 1.0
+mujoco.mj_forward( model, data )
+
 q  = data.qpos[ 0:model.nq ]
 dq = data.qvel[ 0:model.nq ]
 dp = Jp @ dq
@@ -115,7 +118,7 @@ while data.time <= T:
 if is_save:
     data_dic = { "t_arr": t_mat, "p1_arr": p1_mat, "p2_arr": p2_mat, "xref_arr" : x0_mat, "lambda": lmd, "r0": r0, "w0":w0  }
     
-    savemat( "./data/slider_oscillator1.mat", data_dic )
+    savemat( "./data/slider_oscillator0.mat", data_dic )
 
 
 # close
