@@ -1705,7 +1705,7 @@ dir2 = "C:\Users\moses\OneDrive\Documents\GitHub\mujoco-py-v2\ThesisExamples\dat
 
 data = load( dir1 );
 data2 = load( dir2 );
-
+nDOF = length( data.q0_init )+1;
 mk = 2000;
 c_tmp1 = [0.6350 0.0780 0.1840];
 c_tmp2 = [0.0000 0.4470 0.7410];
@@ -1751,16 +1751,15 @@ Nstart = 500;
 plot( a, data.p0_arr( :, 1 ), data.p0_arr( :, 2 ), 'linewidth', 4, 'color', 'k', 'linestyle', ':')
 plot( a, data.p_arr( Nstart:end, 1 ), data.p_arr( Nstart:end, 2 ), 'linewidth', 4, 'color', 'k', 'linestyle', '-')
 
-alpha = 0.3;
+alpha = 0.9;
 % 
 % gvirtual_robot = plot( a, x_tmp, y_tmp, 'linewidth',4, 'color', [c_tmp2, 0.3] );
 % for i = 1: nDOF
 %     scatter( a, x_tmp( i ), y_tmp( 1, i ), 0.5*mk, 'o', 'filled', 'markerfacecolor', 'w', 'markeredgecolor', c_tmp2, 'linewidth', 4, 'markerfacealpha', 1, 'markeredgealpha', alpha );
 % end
 
-g0robot = plot( a, x0_arr( 1, : ), y0_arr( 1, : ), 'linewidth',8, 'color', [0,0,0, alpha] );
+g0robot = plot( a, x0_arr( 1, : ), y0_arr( 1, : ), 'linewidth',8, 'color', [0.4940, 0.1840, 0.5560, alpha] );
 grobot  = plot( a, x_arr( 1, : ), y_arr( 1, : ), 'linewidth', 10, 'color', 'k' );
-
 g0markers = cell( 1, nDOF );
 for i = 1: nDOF
     g0markers{ i }= scatter( a, x0_arr( 1, i ), y0_arr( 1, i ), 0.8*mk, 'o', 'filled', 'markerfacecolor', 'w', 'markeredgecolor', 'k', 'linewidth', 4, 'markerfacealpha', 1, 'markeredgealpha', alpha );
@@ -1921,7 +1920,7 @@ for i = 1:N_stl
     % Plot the STL file
 
     patches{ i } = patch( 'Vertices', vertices.Points, 'Faces', vertices.ConnectivityList, ...
-                         'FaceColor', 0.4*ones( 1, 3), 'EdgeColor', [0.0,0.0,0.0], 'FaceAlpha', 0.4, 'EdgeAlpha', 0.2 );
+                         'FaceColor', 0.4*ones( 1, 3), 'EdgeColor', [0.0,0.0,0.0], 'FaceAlpha', 0.4, 'EdgeAlpha', 0.0 );
 
     % Get the position for each-link and update 
     p_tmp = squeeze( data.p_links( 1, i, : ) ); 
@@ -2127,7 +2126,7 @@ for i = 1:N_stl
     % Plot the STL file
 
     patches{ i } = patch( 'Vertices', vertices.Points, 'Faces', vertices.ConnectivityList, ...
-                         'FaceColor', 0.4*ones( 1, 3), 'EdgeColor', [0.0,0.0,0.0], 'FaceAlpha', 0.4, 'EdgeAlpha', 0.2 );
+                         'FaceColor', 0.4*ones( 1, 3), 'EdgeColor', [0.0,0.0,0.0], 'FaceAlpha', 0.4, 'EdgeAlpha', 0.0 );
 
     % Get the position for each-link and update 
     p_tmp = squeeze( data.p_links( 1, i, : ) ); 
@@ -2333,7 +2332,7 @@ for i = 1:N_stl
     hgs{ i } = hgtransform( 'Matrix', H_tmp, 'parent', a );
 
     patches{ i } = patch( a, 'Vertices', vertices.Points, 'Faces', vertices.ConnectivityList, ...
-                         'FaceColor', 0.4*ones( 1, 3), 'EdgeColor', [0.0,0.0,0.0], 'FaceAlpha', 0.4, 'EdgeAlpha', 0.2 );
+                         'FaceColor', 0.4*ones( 1, 3), 'EdgeColor', [0.0,0.0,0.0], 'FaceAlpha', 0.4, 'EdgeAlpha', 0.0 );
 
     set( patches{ i }, 'Parent', hgs{ i } );
 
@@ -2404,7 +2403,7 @@ for i = 1:N_stl
     hgs1{ i } = hgtransform( 'Matrix', H_tmp, 'parent', a2 );
 
     patches1{ i } = patch( 'Vertices', vertices.Points, 'Faces', vertices.ConnectivityList, ...
-                         'FaceColor', 0.4*ones( 1, 3), 'EdgeColor', [0.0,0.0,0.0], 'FaceAlpha', 0.4, 'EdgeAlpha', 0.2 );
+                         'FaceColor', 0.4*ones( 1, 3), 'EdgeColor', [0.0,0.0,0.0], 'FaceAlpha', 0.4, 'EdgeAlpha', 0.0 );
 
     set( patches1{ i }, 'Parent', hgs1{ i } );
 
@@ -2439,7 +2438,7 @@ for i = 1:N_stl
     hgs2{ i } = hgtransform( 'Matrix', H_tmp, 'parent', a3 );
 
     patches1{ i } = patch( 'Vertices', vertices.Points, 'Faces', vertices.ConnectivityList, ...
-                         'FaceColor', 0.4*ones( 1, 3), 'EdgeColor', [0.0,0.0,0.0], 'FaceAlpha', 0.4, 'EdgeAlpha', 0.2 );
+                         'FaceColor', 0.4*ones( 1, 3), 'EdgeColor', [0.0,0.0,0.0], 'FaceAlpha', 0.4, 'EdgeAlpha', 0.0 );
 
     set( patches1{ i }, 'Parent', hgs2{ i } );
 
@@ -2609,7 +2608,7 @@ for i = 1:N_stl
     hgs{ i } = hgtransform( 'Matrix', H_tmp, 'parent', a );
 
     patches{ i } = patch( a, 'Vertices', vertices.Points, 'Faces', vertices.ConnectivityList, ...
-                         'FaceColor', 0.4*ones( 1, 3), 'EdgeColor', [0.0,0.0,0.0], 'FaceAlpha', 0.4, 'EdgeAlpha', 0.2 );
+                         'FaceColor', 0.4*ones( 1, 3), 'EdgeColor', [0.0,0.0,0.0], 'FaceAlpha', 0.4, 'EdgeAlpha', 0.0 );
 
     set( patches{ i }, 'Parent', hgs{ i } );
 
@@ -2631,7 +2630,7 @@ for i = 1:N_stl
     hgs0{ i } = hgtransform( 'Matrix', H_tmp, 'parent', a );
 
     patches0{ i } = patch( a, 'Vertices', vertices.Points, 'Faces', vertices.ConnectivityList, ...
-                         'FaceColor', 0.4*ones( 1, 3), 'EdgeColor', [0.0,0.0,0.0], 'FaceAlpha', 0.2, 'EdgeAlpha', 0.0 );
+                         'FaceColor', [0.4940 0.1840 0.5560], 'EdgeColor', [0.0,0.0,0.0], 'FaceAlpha', 0.5, 'EdgeAlpha', 0.0 );
 
     set( patches0{ i }, 'Parent', hgs0{ i } );
 
@@ -2691,9 +2690,9 @@ Ene     = data2.kin_mat + data2.U1_mat + data2.U2_mat;
 Ene_mod = data.kin_mat + double( data.gain_mat ).*( data.U1_mat + data.U2_mat );
 
 plot( a2, data.t_arr, Ene_mod, 'linewidth', 5, 'color', 'k' )
-plot( a2, data2.t_arr, Ene, 'linewidth', 10, 'color', 'k', 'linestyle', ':' )
+plot( a2, data2.t_arr, Ene, 'linewidth', 10, 'color', [0.4940 0.1840 0.5560], 'linestyle', ':' )
 p1 = scatter( a2, data.t_arr( 1 ), Ene_mod( 1 ), 500, 'filled', 'o', 'markerfacecolor', 'w', 'markeredgecolor', 'k', 'linewidth', 3 );
-p2 = scatter( a2, data2.t_arr( 1 ), Ene( 1 ), 250, 'filled', 'o', 'markerfacecolor', 'w', 'markeredgecolor', 'k', 'linewidth', 3 );
+p2 = scatter( a2, data2.t_arr( 1 ), Ene( 1 ), 250, 'filled', 'o', 'markerfacecolor', [0.4940 0.1840 0.5560], 'markeredgecolor', 'k', 'linewidth', 3 );
 set( a2, 'xlim', [T_min, T_max ], 'fontsize', 40, 'xticklabel', {} )
 ylabel( a2, 'Total Energy (J)')
 
@@ -2890,7 +2889,7 @@ for i = 1:N_stl
     hgs{ 1,i } = hgtransform( 'Matrix', H_tmp, 'parent', a );
 
     patches{ 1,i } = patch( a, 'Vertices', vertices.Points, 'Faces', vertices.ConnectivityList, ...
-                         'FaceColor', 0.4*ones( 1, 3), 'EdgeColor', [0.0,0.0,0.0], 'FaceAlpha', 0.4, 'EdgeAlpha', 0.2 );
+                         'FaceColor', 0.4*ones( 1, 3), 'EdgeColor', [0.0,0.0,0.0], 'FaceAlpha', 0.4, 'EdgeAlpha', 0.0 );
 
     % Plot the STL file
     % Get the position for each-link and update 
@@ -2901,7 +2900,7 @@ for i = 1:N_stl
     hgs{ 2,i } = hgtransform( 'Matrix', H_tmp, 'parent', a );
 
     patches{ 2,i } = patch( a, 'Vertices', vertices.Points, 'Faces', vertices.ConnectivityList, ...
-                         'FaceColor', 0.4*ones( 1, 3), 'EdgeColor', [0.0,0.0,0.0], 'FaceAlpha', 0.2, 'EdgeAlpha', 0.0 );    
+                         'FaceColor', [0.4940 0.1840 0.5560], 'EdgeColor', [0.0,0.0,0.0], 'FaceAlpha', 0.2, 'EdgeAlpha', 0.0 );    
 
     set( patches{ 1,i }, 'Parent', hgs{ 1,i } );
     set( patches{ 2,i }, 'Parent', hgs{ 2,i } );
@@ -2973,7 +2972,7 @@ for i = 1:N_stl
     hgs1{ 1, i } = hgtransform( 'Matrix', H_tmp, 'parent', a2 );
 
     patches1{ 1, i } = patch( 'Vertices', vertices.Points, 'Faces', vertices.ConnectivityList, ...
-                         'FaceColor', 0.4*ones( 1, 3), 'EdgeColor', [0.0,0.0,0.0], 'FaceAlpha', 0.4, 'EdgeAlpha', 0.2 );
+                         'FaceColor', 0.4*ones( 1, 3), 'EdgeColor', [0.0,0.0,0.0], 'FaceAlpha', 0.4, 'EdgeAlpha', 0.0 );
 
     set( patches1{ 1, i }, 'Parent', hgs1{ 1,i } );
 
@@ -2987,7 +2986,7 @@ for i = 1:N_stl
     hgs1{ 2,i } = hgtransform( 'Matrix', H_tmp, 'parent', a2 );
 
     patches1{ 2,i } = patch( 'Vertices', vertices.Points, 'Faces', vertices.ConnectivityList, ...
-                         'FaceColor', 0.4*ones( 1, 3), 'EdgeColor', [0.0,0.0,0.0], 'FaceAlpha', 0.2, 'EdgeAlpha', 0.0 );    
+                         'FaceColor', [0.4940 0.1840 0.5560], 'EdgeColor', [0.0,0.0,0.0], 'FaceAlpha', 0.2, 'EdgeAlpha', 0.0 );    
 
     set( patches1{ 1,i }, 'Parent', hgs1{ 1,i } );
     set( patches1{ 2,i }, 'Parent', hgs1{ 2,i } );    
@@ -3023,7 +3022,7 @@ for i = 1:N_stl
     hgs2{ 1,i } = hgtransform( 'Matrix', H_tmp, 'parent', a3 );
 
     patches2{ 1,i } = patch( 'Vertices', vertices.Points, 'Faces', vertices.ConnectivityList, ...
-                         'FaceColor', 0.4*ones( 1, 3), 'EdgeColor', [0.0,0.0,0.0], 'FaceAlpha', 0.4, 'EdgeAlpha', 0.2 );
+                         'FaceColor', 0.4*ones( 1, 3), 'EdgeColor', [0.0,0.0,0.0], 'FaceAlpha', 0.4, 'EdgeAlpha', 0.0 );
 
     set( patches2{ i }, 'Parent', hgs2{ i } );
 
@@ -3036,7 +3035,7 @@ for i = 1:N_stl
     hgs2{ 2,i } = hgtransform( 'Matrix', H_tmp, 'parent', a3 );
 
     patches2{ 2,i } = patch( 'Vertices', vertices.Points, 'Faces', vertices.ConnectivityList, ...
-                         'FaceColor', 0.4*ones( 1, 3), 'EdgeColor', [0.0,0.0,0.0], 'FaceAlpha', 0.2, 'EdgeAlpha', 0.0 );    
+                         'FaceColor', [0.4940 0.1840 0.5560], 'EdgeColor', [0.0,0.0,0.0], 'FaceAlpha', 0.2, 'EdgeAlpha', 0.0 );    
 
     set( patches2{ 1,i }, 'Parent', hgs2{ 1,i } );
     set( patches2{ 2,i }, 'Parent', hgs2{ 2,i } );    
