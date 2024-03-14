@@ -85,20 +85,23 @@ dp0_mat  = [ ]
 q0_mat   = [ ]
 gain_mat = [ ] 
 
-Kq = 20 * np.eye( model.nq )
+Kq = 40 * np.eye( model.nq )
+Kq[  0,  0 ] = 100
 Kq[ -1, -1 ] = 100
-Bq = 20 * np.eye( model.nq )
-Bq[ -1, -1 ] = 300
+Bq = 10 * np.eye( model.nq )
 
 gain = 0.0
 gain_mat = []
 
-stp = 0.005
+stp = 0.001
 
 q0_R = np.ones( nq ) * np.pi/(nq+1)
 q0_L = np.copy( q0_R )
 q0_L[ 0 ] = np.pi-q0_L[ 0 ]
 q0_L[ 1: ] = -q0_L[ 1: ]
+
+tmpr = 0.7
+q0_M = np.array( [ tmpr, 0, -np.pi+2*tmpr, 0, -np.pi+2*tmpr ] )
 
 while data.time <= T:
 
@@ -117,17 +120,16 @@ while data.time <= T:
     mujoco.mj_jacSite( model, data, Jp, Jr, id_EE )
 
     dp = Jp @ dq
-
         
     if data.time >= t0 + 1.0*D and data.time <= t0 + 2.0*D:
-        q0 = q0_L
+        q0 = q0_R
         gain = gain + stp if gain < 1.0 else 1.0
 
     elif data.time >= t0 + 2.0*D and data.time <= t0 + 3.0*D:
         gain = gain - stp if gain > 0.0 else 0.0
 
     elif data.time >= t0 + 3.0*D and data.time <= t0 + 4.0*D:
-        q0 = q0_R
+        q0 = q0_L
         gain = gain + stp if gain < 1.0 else 1.0
 
     elif data.time >= t0 + 4.0*D and data.time <= t0 + 5.0*D:

@@ -1092,7 +1092,7 @@ set( a2, 'visible', 'off' )
 % Set up the video writer
 delete('videos/task_space_sing.mp4'  )
 outputVideo = VideoWriter( 'videos/task_space_sing.mp4', 'MPEG-4' );
-outputVideo.FrameRate = 60;
+outputVideo.FrameRate = 30;
 open( outputVideo );
 
 % Time per frame
